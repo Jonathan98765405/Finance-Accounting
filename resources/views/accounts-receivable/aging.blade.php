@@ -35,61 +35,65 @@
     {{-- Summary Cards --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
 
-        <!-- Total Outstanding -->
-        <div class="bg-navy text-white rounded-2xl shadow-card p-6 flex items-center justify-between">
-            <div>
-                <p class="text-white/70 text-xs font-semibold uppercase tracking-wider">Total Outstanding</p>
-                <h2 class="text-2xl font-bold mt-2" id="cardTotalOutstanding">₱0.00</h2>
-            </div>
-            <div class="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center">
-                <i data-lucide="wallet" class="w-6 h-6 text-white"></i>
-            </div>
-        </div>
+ <div class="bg-navy/80 text-white rounded-2xl shadow-card p-6 flex items-center justify-between">
+    <div>
+        <p class="text-white/70 text-xs font-semibold uppercase tracking-wider">
+            Total Outstanding
+        </p>
 
-        <!-- Current -->
-        <div class="bg-white rounded-2xl shadow-card p-6 flex items-center justify-between border-l-4 border-brand-green">
-            <div>
-                <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Current</p>
-                <h2 class="text-2xl font-extrabold text-brand-greenDark mt-2" id="cardCurrent">₱0.00</h2>
-            </div>
-            <div class="w-12 h-12 rounded-xl bg-brand-green/10 flex items-center justify-center">
-                <i data-lucide="check-circle" class="w-6 h-6 text-brand-greenDark"></i>
-            </div>
-        </div>
+        <h2 class="text-2xl font-bold mt-2" id="cardTotalOutstanding">
+            ₱0.00
+        </h2>
+    </div>
 
-        <!-- 31-60 -->
-        <div class="bg-white rounded-2xl shadow-card p-6 flex items-center justify-between border-l-4 border-brand-blue">
-            <div>
-                <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">31–60 Days</p>
-                <h2 class="text-2xl font-extrabold text-brand-blue mt-2" id="card31_60">₱0.00</h2>
-            </div>
-            <div class="w-12 h-12 rounded-xl bg-brand-blue/10 flex items-center justify-center">
-                <i data-lucide="calendar" class="w-6 h-6 text-brand-blue"></i>
-            </div>
-        </div>
+    <div class="w-12 h-12 rounded-xl bg-navy/10 flex items-center justify-center">
+        <i data-lucide="wallet" class="w-6 h-6 text-white"></i>
+    </div>
+</div>
 
-        <!-- 61-90 -->
-        <div class="bg-white rounded-2xl shadow-card p-6 flex items-center justify-between border-l-4 border-brand-orange">
-            <div>
-                <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">61–90 Days</p>
-                <h2 class="text-2xl font-extrabold text-brand-orange mt-2" id="card61_90">₱0.00</h2>
-            </div>
-            <div class="w-12 h-12 rounded-xl bg-brand-orange/10 flex items-center justify-center">
-                <i data-lucide="hourglass" class="w-6 h-6 text-brand-orange"></i>
-            </div>
-        </div>
+<!-- Current -->
+<div class="bg-brand-green/30 rounded-2xl shadow-card p-6 flex items-center justify-between">
+    <div>
+        <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Current</p>
+        <h2 class="text-2xl font-extrabold text-brand-greenDark mt-2" id="cardCurrent">₱0.00</h2>
+    </div>
+    <div class="w-12 h-12 rounded-xl brand-green/10 flex items-center justify-center">
+        <i data-lucide="check-circle" class="w-6 h-6 text-brand-greenDark"></i>
+    </div>
+</div>
 
-        <!-- Over 90 -->
-        <div class="bg-white rounded-2xl shadow-card p-6 flex items-center justify-between border-l-4 border-brand-red">
-            <div>
-                <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">90+ Days</p>
-                <h2 class="text-2xl font-extrabold text-brand-red mt-2" id="cardOver90">₱0.00</h2>
-            </div>
-            <div class="w-12 h-12 rounded-xl bg-brand-red/10 flex items-center justify-center">
-                <i data-lucide="alert-triangle" class="w-6 h-6 text-brand-red"></i>
-            </div>
-        </div>
+<!-- 31-60 -->
+<div class="bg-brand-blue/30 rounded-2xl shadow-card p-6 flex items-center justify-between">
+    <div>
+        <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">31–60 Days</p>
+        <h2 class="text-2xl font-extrabold text-brand-blue mt-2" id="card31_60">₱0.00</h2>
+    </div>
+    <div class="w-12 h-12 rounded-xl bg-brand-blue/10 flex items-center justify-center">
+        <i data-lucide="calendar" class="w-6 h-6 text-brand-blue"></i>
+    </div>
+</div>
 
+<!-- 61-90 -->
+<div class="bg-brand-orange/30 rounded-2xl shadow-card p-6 flex items-center justify-between">
+    <div>
+        <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">61–90 Days</p>
+        <h2 class="text-2xl font-extrabold text-brand-orange mt-2" id="card61_90">₱0.00</h2>
+    </div>
+    <div class="w-12 h-12 rounded-xl bg-brand-orange/10 flex items-center justify-center">
+        <i data-lucide="hourglass" class="w-6 h-6 text-brand-orange"></i>
+    </div>
+</div>
+
+<!-- Over 90 -->
+<div class="bg-brand-red/30 rounded-2xl shadow-card p-6 flex items-center justify-between">
+    <div>
+        <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">90+ Days</p>
+        <h2 class="text-2xl font-extrabold text-brand-red mt-2" id="cardOver90">₱0.00</h2>
+    </div>
+    <div class="w-12 h-12 rounded-xl bg-brand-red/10 flex items-center justify-center">
+        <i data-lucide="alert-triangle" class="w-6 h-6 text-brand-red"></i>
+    </div>
+</div>
     </div>
 
     {{-- Charts Section --}}
