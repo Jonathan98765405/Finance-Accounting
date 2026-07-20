@@ -94,58 +94,6 @@
                     </div>
                 </div>
 
-                {{-- Supporting Documents --}}
-                <div class="bg-white rounded-2xl shadow-card border border-slate-100 p-6 sm:p-8">
-                    <div class="border-b border-slate-100 pb-4 mb-6">
-                        <h3 class="text-lg font-bold text-navy">Supporting Documents</h3>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm border-collapse">
-                            <thead>
-                                <tr class="border-b border-slate-100 text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
-                                    <th class="pb-3 pr-4">Document</th>
-                                    <th class="pb-3 px-4">File Name</th>
-                                    <th class="pb-3 px-4">Size</th>
-                                    <th class="pb-3 px-4">Status</th>
-                                    <th class="pb-3 pl-4 text-right">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-50 text-slate-600">
-                                @forelse ($invoice->documents as $doc)
-                                    <tr>
-                                        <td class="py-3.5 pr-4 font-medium text-slate-800 flex items-center gap-2">
-                                            <i data-lucide="file-text" class="w-4 h-4 text-brand-red"></i>
-                                            {{ $doc->document_type }}
-                                        </td>
-                                        <td class="py-3.5 px-4 font-mono text-xs">{{ $doc->file_name }}</td>
-                                        <td class="py-3.5 px-4">{{ $doc->file_size_human }}</td>
-                                        <td class="py-3.5 px-4">
-                                            <span class="inline-flex items-center rounded-full bg-brand-green/10 px-2.5 py-1 text-xs font-bold text-brand-greenDark">
-                                                {{ ucfirst($doc->status) }}
-                                            </span>
-                                        </td>
-                                        <td class="py-3.5 pl-4 text-right">
-                                            <div class="flex items-center justify-end gap-1.5">
-                                                <button type="button" class="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50 transition">
-                                                    <i data-lucide="eye" class="w-3.5 h-3.5"></i> View
-                                                </button>
-                                                <button type="button" class="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50 transition">
-                                                    <i data-lucide="download" class="w-3.5 h-3.5"></i> Download
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="5" class="text-center text-slate-400 py-8">No supporting documents uploaded.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
                 {{-- Verification Checklist --}}
                 <div class="bg-white rounded-2xl shadow-card border border-slate-100 p-6 sm:p-8">
                     <div class="border-b border-slate-100 pb-4 mb-6">
