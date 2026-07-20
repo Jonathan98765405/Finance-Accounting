@@ -180,32 +180,6 @@
                     </p>
                 </div>
 
-                {{-- Recent Activity --}}
-                <div class="bg-white rounded-2xl shadow-card border border-slate-100 p-6">
-                    <div class="border-b border-slate-100 pb-3 mb-4 flex items-center justify-between">
-                        <h4 class="text-[15px] font-bold text-navy flex items-center gap-2">
-                            <i data-lucide="history" class="w-4 h-4 text-slate-400"></i>
-                            Recent Activity
-                        </h4>
-                    </div>
-
-                    <div class="space-y-4">
-                        @forelse ($invoice->activities()->latest()->get() as $activity)
-                            <div class="flex items-start justify-between gap-3 text-xs {{ !$loop->last ? 'border-b border-slate-50 pb-3' : '' }}">
-                                <div class="space-y-0.5">
-                                    <p class="font-semibold text-slate-700 leading-snug">{{ $activity->description }}</p>
-                                    <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                                        {{ ucwords(str_replace('_', ' ', $activity->type)) }}
-                                    </p>
-                                </div>
-                                <span class="text-slate-400 text-right shrink-0 whitespace-nowrap">{{ $activity->created_at->diffForHumans() }}</span>
-                            </div>
-                        @empty
-                            <p class="text-slate-400 text-sm text-center py-4">No activity recorded yet for this invoice.</p>
-                        @endforelse
-                    </div>
-                </div>
-
             </div>
 
         </div>
