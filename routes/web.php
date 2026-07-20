@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GeneralLedgerController;
 use App\Http\Controllers\AccountsPayableController;
 use App\Http\Controllers\FixedAssetController;
@@ -18,6 +19,8 @@ Route::get('/', function () {
     return view('dashboard.dashboard');
 })->name('dashboard');
 
+Route::get('/', [DashboardController::class, 'index'])
+    ->name('dashboard');
 
 /*
 |--------------------------------------------------------------------------
