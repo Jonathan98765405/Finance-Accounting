@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use App\Models\AccountReceivable\Invoice as ArInvoice;
 use App\Models\AccountPayable\Invoice as ApInvoice;
 use App\Models\GeneralLedger\Account;
 use App\Models\GeneralLedger\Entry;
@@ -100,7 +100,13 @@ class DashboardController extends Controller
         // ================= TODO: remaining modules =================
         // Left as null on purpose — Blade's `?? 'placeholder'` fallback
         // handles these until each is wired to a real model.
-        $accountReceivable = null;
+        try {
+         $accountReceivableRaw = ArInvoice::sum('balance');
+          $accountReceivable = '₱' . number_format($accountReceivableRaw, 2);
+         } catch (\Throwable $e) {
+          report($e);
+          $accountReceivable = null;
+         }
         $complianceScore = null;
         $fixedAssets = null;
         $budgetEntries = null;
