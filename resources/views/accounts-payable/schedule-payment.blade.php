@@ -168,7 +168,7 @@
                             }
 
                             $rows = $rows->sortBy('date')->values();
-                            $visibleLimit = 5;
+                            $visibleLimit = 7;
                             $visibleRows = $rows->take($visibleLimit);
                         @endphp
 
