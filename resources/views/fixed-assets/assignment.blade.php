@@ -177,7 +177,7 @@
                     <div>Maintenance Type</div><div class="text-right font-medium text-gray-700">Preventive Maintenance</div>
                     <div>Technician</div><div class="text-right font-medium text-gray-700">Mel Paul Torres</div>
                     <div>Priority</div><div class="text-right font-medium text-gray-700">Medium</div>
-                    <div>Estimated Cost</div><div class="text-right font-medium text-gray-700">$45.00</div>
+                    <div>Estimated Cost</div><div class="text-right font-medium text-gray-700">₱45.00</div>
                 </div>
             </div>
 
@@ -210,9 +210,9 @@
             <div class="space-y-3">
                 @php
                     $history = [
-                        ['date' => 'June 20, 2025', 'type' => 'Preventive Maintenance', 'tech' => 'Mel Paul Torres', 'desc' => 'System check and optimization', 'cost' => '$50.00', 'status' => 'Completed'],
-                        ['date' => 'September 12, 2024', 'type' => 'Repaired Part', 'tech' => 'Mel Paul Torres', 'desc' => 'General check up', 'cost' => '$1,200.00', 'status' => 'Completed'],
-                        ['date' => 'March 5, 2024', 'type' => 'Setup', 'tech' => 'Mel Paul Torres', 'desc' => 'Initial setup and configuration', 'cost' => '$450.00', 'status' => 'Completed'],
+                        ['date' => 'June 20, 2025', 'type' => 'Preventive Maintenance', 'tech' => 'Mel Paul Torres', 'desc' => 'System check and optimization', 'cost' => '₱50.00', 'status' => 'Completed'],
+                        ['date' => 'September 12, 2024', 'type' => 'Repaired Part', 'tech' => 'Mel Paul Torres', 'desc' => 'General check up', 'cost' => '₱1,200.00', 'status' => 'Completed'],
+                        ['date' => 'March 5, 2024', 'type' => 'Setup', 'tech' => 'Mel Paul Torres', 'desc' => 'Initial setup and configuration', 'cost' => '₱450.00', 'status' => 'Completed'],
                     ];
                 @endphp
                 @foreach ($history as $h)
@@ -229,7 +229,7 @@
             </div>
             <div class="mt-3 flex items-center justify-between rounded-md px-3 py-2 text-sm font-semibold" style="background:#EEF0FA;color:#173A66;">
                 <span>Total Maintenance Cost</span>
-                <span>$1,700.00</span>
+                <span>₱1,700.00</span>
             </div>
         </div>
     </div>

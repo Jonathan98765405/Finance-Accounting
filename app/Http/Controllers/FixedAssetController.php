@@ -33,8 +33,8 @@ class FixedAssetController extends Controller
 
     $stats = [
         ['label' => 'Total Assets', 'value' => $fixedAssets->count(), 'icon' => 'fa-warehouse', 'color' => '#22B57A'],
-        ['label' => 'Total Assets Value', 'value' => '$' . number_format($fixedAssets->sum('acquisition_cost'), 2), 'icon' => 'fa-dollar-sign', 'color' => '#22B57A'],
-        ['label' => 'Accumulated Depreciation', 'value' => '$' . number_format($fixedAssets->sum('accumulated_depreciation'), 2), 'icon' => 'fa-chart-line', 'color' => '#22B57A'],
+        ['label' => 'Total Assets Value', 'value' => '₱' . number_format($fixedAssets->sum('acquisition_cost'), 2), 'icon' => 'fa-dollar-sign', 'color' => '#22B57A'],
+        ['label' => 'Accumulated Depreciation', 'value' => '₱' . number_format($fixedAssets->sum('accumulated_depreciation'), 2), 'icon' => 'fa-chart-line', 'color' => '#22B57A'],
         ['label' => 'Under Maintenance', 'value' => $fixedAssets->where('status', 'under_maintenance')->count(), 'icon' => 'fa-screwdriver-wrench', 'color' => '#F5A623'],
     ];
 
@@ -46,7 +46,7 @@ class FixedAssetController extends Controller
             'category' => $asset->category->category_name ?? 'Uncategorized',
             'location' => $asset->location,
             'date' => $asset->acquisition_date->format('M d, Y'),
-            'cost' => '$' . number_format($asset->acquisition_cost, 2),
+            'cost' => '₱' . number_format($asset->acquisition_cost, 2),
             'status' => $statusMap[$asset->status] ?? ucfirst($asset->status),
         ];
     });
@@ -128,7 +128,7 @@ class FixedAssetController extends Controller
             'category' => $asset->category->category_name ?? 'Uncategorized',
             'status' => $statusMap[$asset->status] ?? ucfirst($asset->status),
             'purchase_date' => $asset->acquisition_date->format('M d, Y'),
-            'purchase_cost' => '$' . number_format($asset->acquisition_cost, 2),
+            'purchase_cost' => '₱' . number_format($asset->acquisition_cost, 2),
             'useful_life' => $asset->useful_life_years . ' Year',
             'location' => $asset->location ?? '-',
             'condition' => $asset->condition ?? 'Good',
