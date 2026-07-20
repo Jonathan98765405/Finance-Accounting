@@ -66,7 +66,11 @@
             <div class="bg-white rounded-lg border border-gray-200 p-5 flex items-center gap-4">
                 <div class="w-12 h-12 rounded-full flex items-center justify-center text-white shrink-0"
                      style="background: {{ $stat['color'] ?? '#22B57A' }};">
-                    <i data-lucide="{{ $resolveIcon($stat) }}" class="w-5 h-5"></i>
+                    @if (strtolower(trim($stat['label'] ?? '')) === 'total assets value')
+                        <span class="text-lg font-bold leading-none">&#8369;</span>
+                    @else
+                        <i data-lucide="{{ $resolveIcon($stat) }}" class="w-5 h-5"></i>
+                    @endif
                 </div>
                 <div>
                     <div class="text-gray-500 text-sm">{{ $stat['label'] }}</div>
