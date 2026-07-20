@@ -23,9 +23,7 @@
      fin_tax_filings. Nothing here is hardcoded. --}}
 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-6 bg-white rounded-2xl shadow-card p-6">
     @php
-        // $headerStats is injected by the controller for every financial-reports
-        // page. Fall back to an empty shape defensively so the partial never
-        // throws if a route forgets to pass it.
+
         $hs = $headerStats ?? [
             'totalRevenue' => 0, 'totalRevenueTrend' => null,
             'netProfit' => 0, 'netProfitTrend' => null,
@@ -162,12 +160,7 @@
 
 @push('scripts')
     <script>
-        // ==========================================================================
-        // Header actions: Generate Report / Export PDF / Export Excel / Add Audit
-        // Self-contained here so header.blade.php works independently of the rest
-        // of the page's scripts. Exposes everything on window.AppUI so the
-        // buttons above (onclick="AppUI.xxx()") work.
-        // ==========================================================================
+      
         window.AppUI = window.AppUI || {};
 
         Object.assign(AppUI, (function () {
