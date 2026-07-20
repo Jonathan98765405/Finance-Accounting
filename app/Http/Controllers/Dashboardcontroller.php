@@ -6,6 +6,7 @@ use App\Models\AccountPayable\Invoice as ApInvoice;
 use App\Models\GeneralLedger\Account;
 use App\Models\GeneralLedger\Entry;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -97,16 +98,41 @@ class DashboardController extends Controller
             $netProfit = null;
         }
 
+        try {
+            $accountReceivableRaw = ArInvoice::sum('balance');
+            $accountReceivable = '₱' . number_format($accountReceivableRaw, 2);
+        } catch (\Throwable $e) {
+            report($e);
+            $accountReceivable = null;
+        }
+
+        // ================= BUDGET FORECASTING (real) =================
+        try {
+            $budgetRows = DB::table('budgets')->get();
+
+            if ($budgetRows->isNotEmpty()) {
+                $budgetTotalRaw = $budgetRows->sum('budget');
+                $budgetActualRaw = $budgetRows->sum('actual');
+                $budgetVarianceRaw = $budgetTotalRaw - $budgetActualRaw;
+
+                $budgetTotal = '₱' . number_format($budgetTotalRaw, 2);
+                $budgetActual = '₱' . number_format($budgetActualRaw, 2);
+                $budgetVariance = '₱' . number_format($budgetVarianceRaw, 2);
+            } else {
+                $budgetTotal = null;
+                $budgetActual = null;
+                $budgetVariance = null;
+            }
+        } catch (\Throwable $e) {
+            report($e);
+            $budgetTotal = null;
+            $budgetActual = null;
+            $budgetVariance = null;
+        }
+
         // ================= TODO: remaining modules =================
         // Left as null on purpose — Blade's `?? 'placeholder'` fallback
         // handles these until each is wired to a real model.
-        try {
-         $accountReceivableRaw = ArInvoice::sum('balance');
-          $accountReceivable = '₱' . number_format($accountReceivableRaw, 2);
-         } catch (\Throwable $e) {
-          report($e);
-          $accountReceivable = null;
-         }
         $complianceScore = null;
         $fixedAssets = null;
         $budgetEntries = null;
@@ -116,6 +142,7 @@ class DashboardController extends Controller
             'adminFirstName',
             'accountPayable',
             'ledgerEntries', 'accountReceivable', 'complianceScore', 'fixedAssets', 'budgetEntries',
+            'budgetTotal', 'budgetActual', 'budgetVariance',
             'totalAssets', 'netProfit', 'cashOnHand', 'openTasks'
         ));
     }

@@ -16,8 +16,6 @@
                     </p>
 
                     <div class="flex flex-wrap gap-3 mt-6 no-print">
-                        {{-- FIX: route() throws a fatal RouteNotFoundException if the
-                             named route isn't registered. Route::has() guards that. --}}
                         @if (Route::has('financial-reports.overview'))
                             <a href="{{ route('financial-reports.overview') }}"
                                 class="flex items-center gap-2 rounded-xl bg-brand-green px-5 py-3 text-sm font-semibold text-navy shadow-card hover:bg-brand-greenDark hover:text-white transition">
@@ -64,7 +62,6 @@
             {{-- Module cards --}}
             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
                 @php
-                  
                     $moduleHref = fn (string $name) => Route::has($name) ? route($name) : null;
 
                     $modules = [
@@ -95,8 +92,8 @@
                         ],
                         [
                             'icon' => 'trending-up', 'iconBg' => 'bg-brand-orange/20', 'iconColor' => 'text-brand-orange',
-                            'title' => 'Budget Forecasting', 'subtitle' => 'Charts of accounts & journal entry',
-                            'value' => $budgetEntries ?? '12,480', 'footnote' => 'Entries this month', 'href' => $moduleHref('budget.view'),
+                            'title' => 'Budget Forecasting', 'subtitle' => 'Budget vs. actual spend',
+                            'value' => $budgetTotal ?? '₱12,480,000', 'footnote' => 'Total budget allocated', 'href' => $moduleHref('budget.view'),
                         ],
                     ];
                 @endphp
@@ -118,7 +115,6 @@
                             <p class="text-slate-400 text-xs mt-0.5 uppercase tracking-wide">{{ $mod['footnote'] }}</p>
                         </a>
                     @else
-                        {{-- Route not registered yet: render the same card, minus the link, instead of crashing the page --}}
                         <div class="block bg-white rounded-2xl shadow-card p-5 sm:p-6 border border-transparent opacity-60 cursor-not-allowed">
                             <div class="flex items-start justify-between mb-5">
                                 <div class="flex h-14 w-14 items-center justify-center rounded-xl {{ $mod['iconBg'] }} {{ $mod['iconColor'] }}">
