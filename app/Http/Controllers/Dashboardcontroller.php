@@ -1,15 +1,18 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Models\AccountReceivable\Invoice as ArInvoice;
+
 use App\Models\AccountPayable\Invoice as ApInvoice;
-use App\Models\GeneralLedger\Account;
 use App\Models\GeneralLedger\Entry;
+use App\Services\FinancialReportService;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    public function __construct(protected FinancialReportService $reports)
+    {
+    }
+
     /**
      * GET /dashboard  -> the main "Welcome Back" dashboard
      */
@@ -27,8 +30,6 @@ class DashboardController extends Controller
         }
 
         // ================= GENERAL LEDGER =================
-        // Fixed: model is App\Models\GeneralLedger\Entry (not JournalEntry),
-        // confirmed from GeneralLedgerController.
         try {
             $ledgerEntriesCount = Entry::whereMonth('entry_date', now()->month)
                 ->whereYear('entry_date', now()->year)
@@ -39,101 +40,42 @@ class DashboardController extends Controller
             $ledgerEntries = null;
         }
 
-        // ================= TOP STAT CARDS =================
-        // Reuses the exact same per-account debit/credit aggregation as
-        // GeneralLedgerController::index() (via Account::entryLines()),
-        // so these numbers will match the General Ledger page's own cards.
-        // Net Profit here = Net Income = SUM(Revenue) - SUM(Expense),
-        // ALL-TIME (same as the GL page's "Net Income" card — GL doesn't
-        // filter by month there, so this doesn't either, to stay consistent).
+        // ================= TOP STAT CARDS (via FinancialReportService) =================
+        // Reusing the SAME service the Financial Reports pages already use
+        // (FinancialReportsController -> $this->reports->headerStats($year)),
+        // so these numbers are guaranteed consistent with what's shown there
+        // instead of being a second, independently-computed version.
         try {
-            $accounts = Account::all();
+            $headerStats = $this->reports->headerStats(now()->year);
 
-            $totalAssetsRaw = 0;
-            $cashOnHandRaw = 0;
-            $totalRevenue = 0;
-            $totalExpense = 0;
+            $totalAssetsRaw = $this->pluck($headerStats, ['totalAssets', 'total_assets']);
+            $netIncomeRaw = $this->pluck($headerStats, ['netIncome', 'net_income', 'netProfit', 'net_profit']);
+            $cashOnHandRaw = $this->pluck($headerStats, ['cashOnHand', 'cash_on_hand', 'cash']);
 
-            foreach ($accounts as $account) {
-                $debit = $account->entryLines()->sum('debit');
-                $credit = $account->entryLines()->sum('credit');
+            $totalAssets = $totalAssetsRaw !== null ? '₱' . number_format($totalAssetsRaw, 2) : null;
+            $netProfit = $netIncomeRaw !== null ? '₱' . number_format($netIncomeRaw, 2) : null;
+            $cashOnHand = $cashOnHandRaw !== null ? '₱' . number_format($cashOnHandRaw, 2) : null;
 
-                if ($account->account_type === 'Asset') {
-                    $totalAssetsRaw += ($debit - $credit);
-                }
+            // Compliance Score comes straight from headerStats(), the same
+            // source the Financial Reports header card uses
+            // (FinancialReportService::headerStats() -> 'complianceScore' /
+            // 'complianceLabel', derived from complianceDonut()'s
+            // fin_audits data), so it always matches what's shown there.
+            $complianceScoreRaw = $this->pluck($headerStats, ['complianceScore', 'compliance_score']);
+            $complianceLabelRaw = $this->pluck($headerStats, ['complianceLabel', 'compliance_label']);
 
-                // "Cash on Hand" is an actual account name in this schema
-                // (confirmed from the General Ledger screenshot), not a
-                // guessed category — exact match first, falls back to a
-                // loose match only if no exact-named account exists.
-                if ($account->account_name === 'Cash on Hand') {
-                    $cashOnHandRaw += ($debit - $credit);
-                }
-
-                if ($account->account_type === 'Revenue') {
-                    $totalRevenue += ($credit - $debit);
-                }
-
-                if ($account->account_type === 'Expense') {
-                    $totalExpense += ($debit - $credit);
-                }
-            }
-
-            // Fallback if no account is named exactly "Cash on Hand"
-            if ($cashOnHandRaw === 0 && ! $accounts->contains('account_name', 'Cash on Hand')) {
-                foreach ($accounts as $account) {
-                    if (stripos($account->account_name, 'cash') !== false) {
-                        $cashOnHandRaw += ($account->entryLines()->sum('debit') - $account->entryLines()->sum('credit'));
-                    }
-                }
-            }
-
-            $totalAssets = '₱' . number_format($totalAssetsRaw, 2);
-            $cashOnHand = '₱' . number_format($cashOnHandRaw, 2);
-            $netProfit = '₱' . number_format($totalRevenue - $totalExpense, 2);
+            $complianceScore = $complianceScoreRaw !== null
+                ? $complianceScoreRaw . '%' : null;
         } catch (\Throwable $e) {
             report($e);
             $totalAssets = null;
-            $cashOnHand = null;
             $netProfit = null;
+            $cashOnHand = null;
+            $complianceScore = null;
         }
 
-        try {
-            $accountReceivableRaw = ArInvoice::sum('balance');
-            $accountReceivable = '₱' . number_format($accountReceivableRaw, 2);
-        } catch (\Throwable $e) {
-            report($e);
-            $accountReceivable = null;
-        }
-
-        // ================= BUDGET FORECASTING (real) =================
-        try {
-            $budgetRows = DB::table('budgets')->get();
-
-            if ($budgetRows->isNotEmpty()) {
-                $budgetTotalRaw = $budgetRows->sum('budget');
-                $budgetActualRaw = $budgetRows->sum('actual');
-                $budgetVarianceRaw = $budgetTotalRaw - $budgetActualRaw;
-
-                $budgetTotal = '₱' . number_format($budgetTotalRaw, 2);
-                $budgetActual = '₱' . number_format($budgetActualRaw, 2);
-                $budgetVariance = '₱' . number_format($budgetVarianceRaw, 2);
-            } else {
-                $budgetTotal = null;
-                $budgetActual = null;
-                $budgetVariance = null;
-            }
-        } catch (\Throwable $e) {
-            report($e);
-            $budgetTotal = null;
-            $budgetActual = null;
-            $budgetVariance = null;
-        }
-
-        // ================= TODO: remaining modules =================
-        // Left as null on purpose — Blade's `?? 'placeholder'` fallback
-        // handles these until each is wired to a real model.
-        $complianceScore = null;
+        // ================= TODO: remaining =================
+        $accountReceivable = null;
         $fixedAssets = null;
         $budgetEntries = null;
         $openTasks = null;
@@ -142,8 +84,26 @@ class DashboardController extends Controller
             'adminFirstName',
             'accountPayable',
             'ledgerEntries', 'accountReceivable', 'complianceScore', 'fixedAssets', 'budgetEntries',
-            'budgetTotal', 'budgetActual', 'budgetVariance',
             'totalAssets', 'netProfit', 'cashOnHand', 'openTasks'
         ));
+    }
+
+    /**
+     * Try several possible key names (array or object) against a data
+     * structure and return the first match found, or null if none exist.
+     * Used because headerStats()'s exact key names aren't confirmed yet.
+     */
+    protected function pluck(mixed $data, array $keys): mixed
+    {
+        foreach ($keys as $key) {
+            if (is_array($data) && array_key_exists($key, $data)) {
+                return $data[$key];
+            }
+            if (is_object($data) && isset($data->{$key})) {
+                return $data->{$key};
+            }
+        }
+
+        return null;
     }
 }
