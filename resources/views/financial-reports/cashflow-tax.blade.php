@@ -8,9 +8,6 @@
     @include('financial-reports.header')
 
     @php
-      // $taxSummary, $taxCalculation, $taxCalendar all come from
-      // FinancialReportsController -> FinancialReportService, which reads the
-      // fin_tax_filings / fin_tax_calendar tables. No hardcoded figures here.
 
       $fmt = fn($n) => ($n < 0 ? '-₱' : '₱') . number_format(abs($n));
 
