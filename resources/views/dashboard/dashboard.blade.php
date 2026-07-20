@@ -64,13 +64,7 @@
             {{-- Module cards --}}
             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
                 @php
-                    // FIX: build each href with Route::has() instead of calling
-                    // route() directly in the array literal below. Previously,
-                    // if ANY of these six named routes wasn't registered yet
-                    // (e.g. fixed-assets.index, budget.view, ledger.index),
-                    // route() would throw immediately while this @php block
-                    // evaluates — before anything is ever rendered — producing
-                    // a blank white screen with no visible error.
+                   
                     $moduleHref = fn (string $name) => Route::has($name) ? route($name) : null;
 
                     $modules = [
