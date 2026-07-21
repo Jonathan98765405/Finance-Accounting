@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AccountReceivable\Invoice as ArInvoice;
 use App\Models\AccountPayable\Invoice as ApInvoice;
 use App\Models\GeneralLedger\Entry;
 use App\Services\FinancialReportService;
@@ -28,6 +29,16 @@ class DashboardController extends Controller
             report($e);
             $accountPayable = null;
         }
+
+        // =================Account Receivable======================
+        
+        try {
+         $accountReceivableRaw = ArInvoice::sum('balance');
+          $accountReceivable = '₱' . number_format($accountReceivableRaw, 2);
+         } catch (\Throwable $e) {
+          report($e);
+          $accountReceivable = null;
+         }
 
         // ================= GENERAL LEDGER =================
         try {
@@ -75,7 +86,7 @@ class DashboardController extends Controller
         }
 
         // ================= TODO: remaining =================
-        $accountReceivable = null;
+        
         $fixedAssets = null;
         $budgetEntries = null;
         $openTasks = null;
