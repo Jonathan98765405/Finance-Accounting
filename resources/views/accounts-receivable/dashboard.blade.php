@@ -1,3 +1,4 @@
+//marcelo 2:34pm
 @extends('layouts.app')
 
 @section('page-title', 'Accounts Receivable')
@@ -363,6 +364,8 @@ function recalculateSummaryData() {
 function computeAging() {
     return agingTotals;
 }
+
+
 
 // ================= PRIMARY UI RENDERING ENGINE =================
 function renderInvoicesTable() {
