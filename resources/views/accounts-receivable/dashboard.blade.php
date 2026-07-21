@@ -652,6 +652,7 @@ function openInvoiceModal(id) {
     `, 'lg');
 }
 
+const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 function openEditModal(id) {
     const invoice = invoicesData.find(i => i.id === id);
     if (!invoice) return;
@@ -717,43 +718,51 @@ function openEditModal(id) {
     evaluateModalFormAggregates();
 
     document.getElementById('editInvoiceSubmitForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const targetId = Number(document.getElementById('editInvId').value);
-        const activeInvoice = invoicesData.find(i => i.id === targetId);
+    e.preventDefault();
+    const targetId = Number(document.getElementById('editInvId').value);
 
-        if (activeInvoice) {
-            const descriptions = document.querySelectorAll('.edit-description');
-            const quantities = document.querySelectorAll('.edit-quantity');
-            const prices = document.querySelectorAll('.edit-price');
+    const descriptions = document.querySelectorAll('.edit-description');
+    const quantities = document.querySelectorAll('.edit-quantity');
+    const prices = document.querySelectorAll('.edit-price');
 
-            let updatedItems = [];
-            descriptions.forEach((item, idx) => {
-                updatedItems.push({
-                    description: item.value,
-                    quantity: Number(quantities[idx].value),
-                    unit_price: Number(prices[idx].value)
-                });
-            });
+    const payload = {
+        invoice_date: document.getElementById('editInvoiceDate').value,
+        due_date: document.getElementById('editDueDate').value,
+        description: [],
+        quantity: [],
+        unit_price: []
+    };
 
-            activeInvoice.invoice_date = document.getElementById('editInvoiceDate').value;
-            activeInvoice.due_date = document.getElementById('editDueDate').value;
-            activeInvoice.items = updatedItems;
-
-            const sub = updatedItems.reduce((acc, current) => acc + (current.quantity * current.unit_price), 0);
-            const tx = sub * 0.12;
-            const grossTotal = sub + tx;
-            const paidHistoricalTotal = activeInvoice.total - activeInvoice.balance;
-
-            activeInvoice.subtotal = sub;
-            activeInvoice.tax = tx;
-            activeInvoice.total = grossTotal;
-            activeInvoice.balance = activeInvoice.status === 'Paid' ? 0 : Math.max(grossTotal - paidHistoricalTotal, 0);
-
-            AppUI.closeModal();
-            renderDashboard();
-            AppUI.showToast('Ledger document updates saved to framework storage.', 'success');
-        }
+    descriptions.forEach((item, idx) => {
+        payload.description.push(item.value);
+        payload.quantity.push(quantities[idx].value);
+        payload.unit_price.push(prices[idx].value);
     });
+
+    fetch(`/accounts-receivable/invoice/${targetId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': CSRF_TOKEN
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+        AppUI.closeModal();
+        if (data.success) {
+            AppUI.showToast(data.message || 'Invoice updated successfully.', 'success');
+            window.location.reload(); // or refetch + renderDashboard()
+        } else {
+            AppUI.showToast('Something went wrong while updating the invoice.', 'error');
+        }
+    })
+    .catch(() => {
+        AppUI.closeModal();
+        AppUI.showToast('Something went wrong while updating the invoice.', 'error');
+    });
+});
 }
 
 function evaluateModalFormAggregates() {
