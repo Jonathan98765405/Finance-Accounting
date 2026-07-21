@@ -56,7 +56,7 @@ class BudgetController extends Controller
         }
 
         foreach ($records as $key => $values) {
-            // Clean out commas or currency symbols if passed as strings
+            
             $cleanBudget = isset($values['budget']) ? floatval(str_replace([',', '$'], '', $values['budget'])) : 0;
             $cleanActual = isset($values['actual']) ? floatval(str_replace([',', '$'], '', $values['actual'])) : 0;
 
