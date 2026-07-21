@@ -631,7 +631,7 @@
             const formatSelect = document.getElementById('exportFormatSelect');
 
             if (emailInput && !emailInput.value.trim().includes('@')) {
-                emailInput.style.border = '2px solid #FD0E35';
+                emailInput.style.border = '2px solid #EF4444';
                 return;
             } else if (emailInput) {
                 emailInput.style.border = 'none';
