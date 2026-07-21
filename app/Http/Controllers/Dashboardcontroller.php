@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AccountReceivable\Invoice as ArInvoice;
 use App\Models\AccountPayable\Invoice as ApInvoice;
 use App\Models\GeneralLedger\Entry;
+use App\Models\GeneralLedger\Account;
 use App\Services\FinancialReportService;
 use Illuminate\Support\Facades\Auth;
 
@@ -51,6 +52,28 @@ class DashboardController extends Controller
             $ledgerEntries = null;
         }
 
+        // ================= CASH ON HAND (real, from General Ledger) =================
+        // Cash on Hand = Debit - Credit on all entry lines posted against
+        // the "Cash on Hand" GL account (account_code 1000 — same account
+        // used everywhere else in GeneralLedgerService::CASH_ACCOUNT_CODE),
+        // so this always reflects the actual ledger balance instead of a
+        // duplicate figure sourced from headerStats().
+        try {
+            $cashAccount = Account::where('account_code', '1000')->first();
+
+            if ($cashAccount) {
+                $cashDebit = $cashAccount->entryLines()->sum('debit');
+                $cashCredit = $cashAccount->entryLines()->sum('credit');
+                $cashOnHandRaw = $cashDebit - $cashCredit;
+                $cashOnHand = '₱' . number_format($cashOnHandRaw, 2);
+            } else {
+                $cashOnHand = null;
+            }
+        } catch (\Throwable $e) {
+            report($e);
+            $cashOnHand = null;
+        }
+
         // ================= TOP STAT CARDS (via FinancialReportService) =================
         // Reusing the SAME service the Financial Reports pages already use
         // (FinancialReportsController -> $this->reports->headerStats($year)),
@@ -61,11 +84,9 @@ class DashboardController extends Controller
 
             $totalAssetsRaw = $this->pluck($headerStats, ['totalAssets', 'total_assets']);
             $netIncomeRaw = $this->pluck($headerStats, ['netIncome', 'net_income', 'netProfit', 'net_profit']);
-            $cashOnHandRaw = $this->pluck($headerStats, ['cashOnHand', 'cash_on_hand', 'cash']);
 
             $totalAssets = $totalAssetsRaw !== null ? '₱' . number_format($totalAssetsRaw, 2) : null;
             $netProfit = $netIncomeRaw !== null ? '₱' . number_format($netIncomeRaw, 2) : null;
-            $cashOnHand = $cashOnHandRaw !== null ? '₱' . number_format($cashOnHandRaw, 2) : null;
 
             // Compliance Score comes straight from headerStats(), the same
             // source the Financial Reports header card uses
@@ -81,7 +102,6 @@ class DashboardController extends Controller
             report($e);
             $totalAssets = null;
             $netProfit = null;
-            $cashOnHand = null;
             $complianceScore = null;
         }
 
@@ -89,13 +109,12 @@ class DashboardController extends Controller
         
         $fixedAssets = null;
         $budgetEntries = null;
-        $openTasks = null;
 
         return view('dashboard.dashboard', compact(
             'adminFirstName',
             'accountPayable',
             'ledgerEntries', 'accountReceivable', 'complianceScore', 'fixedAssets', 'budgetEntries',
-            'totalAssets', 'netProfit', 'cashOnHand', 'openTasks'
+            'totalAssets', 'netProfit', 'cashOnHand'
         ));
     }
 

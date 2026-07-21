@@ -81,14 +81,14 @@
                             'value' => $accountPayable ?? '₱210,000', 'footnote' => 'Due in 30 days', 'href' => $moduleHref('ap.dashboard'),
                         ],
                         [
-                            'icon' => 'clipboard-check', 'iconBg' => 'bg-brand-blue/20', 'iconColor' => 'text-brand-blue',
-                            'title' => 'Financial Reports', 'subtitle' => 'Statements & compliance',
-                            'value' => $complianceScore ?? '98%', 'footnote' => 'Compliance score', 'href' => $moduleHref('financial-reports.overview'),
-                        ],
-                        [
                             'icon' => 'box', 'iconBg' => 'bg-brand-green/20', 'iconColor' => 'text-brand-greenDark',
                             'title' => 'Fixed Assets', 'subtitle' => 'Property, equipment, depreciation',
                             'value' => $fixedAssets ?? '₱1,250,000', 'footnote' => 'Net book value', 'href' => $moduleHref('fixed-assets.index'),
+                        ],
+                        [
+                            'icon' => 'clipboard-check', 'iconBg' => 'bg-brand-blue/20', 'iconColor' => 'text-brand-blue',
+                            'title' => 'Financial Reports', 'subtitle' => 'Statements & compliance',
+                            'value' => $complianceScore ?? '98%', 'footnote' => 'Compliance score', 'href' => $moduleHref('financial-reports.overview'),
                         ],
                         [
                             'icon' => 'trending-up', 'iconBg' => 'bg-brand-orange/20', 'iconColor' => 'text-brand-orange',

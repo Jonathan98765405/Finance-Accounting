@@ -8,7 +8,7 @@
 @section('page-subtitle','Manage company fixed assets.')
 
 @section('content')
-//Munar 2:34pm
+{{-- Munar 3:34 --}}
     {{-- Header --}}
     <div class="flex items-start justify-between mb-6">
         <div>

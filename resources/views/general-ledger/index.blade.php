@@ -1,3 +1,4 @@
+{{-- Bergado 3:34 --}}
 @extends('layouts.app')
 
 @section('page-title', 'General Ledger')
@@ -5,7 +6,6 @@
 @section('page-subtitle', 'Monitor journal entries, balances, accounts and financial activities.')
 
 @section('content')
-//Bergado 2:38pm
 @if(session('success'))
     <div class="bg-brand-green/10 border border-brand-green/20 text-brand-greenDark px-6 py-4 rounded-2xl mb-8 flex items-center shadow-sm">
         <div class="bg-brand-green/20 p-2 rounded-full mr-4">
@@ -129,6 +129,17 @@
                 </select>
                 <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
             </div>
+
+            <div class="relative">
+                <select
+                    name="sort"
+                    onchange="this.form.submit()"
+                    class="appearance-none border border-slate-200 rounded-xl pl-4 pr-9 py-2.5 text-sm font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 focus:outline-none focus:ring-4 focus:ring-navy-600/10 focus:border-navy transition-all cursor-pointer">
+                    <option value="latest" {{ request('sort', 'latest') == 'latest' ? 'selected' : '' }}>Latest Journal Entry</option>
+                    <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest Journal Entry</option>
+                </select>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            </div>
         </div>
 
         {{-- Right Side --}}
@@ -146,6 +157,13 @@
             <button class="bg-navy hover:bg-navy-700 text-white px-6 py-2.5 rounded-xl font-semibold text-sm shadow-[0_4px_10px_rgba(22,38,91,0.2)] hover:shadow-[0_6px_15px_rgba(22,38,91,0.3)] transition-all active:scale-95">
                 Search
             </button>
+
+            @if((request()->anyFilled(['status', 'account_id', 'search']) && request('status') != 'all') || request('sort') == 'oldest')
+                <a href="{{ route('ledger.index') }}"
+                    class="flex items-center gap-2 border border-slate-200 text-slate-500 hover:text-brand-red hover:border-brand-red/30 hover:bg-brand-red/5 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all">
+                    <i data-lucide="x" class="w-4 h-4"></i> Clear
+                </a>
+            @endif
         </div>
 
     </div>
@@ -162,7 +180,12 @@
                     </div>
                     Journal Entries
                 </h2>
-                <p class="text-slate-500 text-sm mt-1 ml-11">Showing the {{ $entries->count() }} most recent transactions</p>
+                <p class="text-slate-500 text-sm mt-1 ml-11">
+                    Showing the {{ $entries->count() }} most recent transactions
+                    @if((request()->anyFilled(['status', 'account_id', 'search']) && request('status') != 'all') || request('sort') == 'oldest')
+                        <span class="text-navy font-semibold">(filtered)</span>
+                    @endif
+                </p>
             </div>
             <a href="{{ route('ledger.create') }}" class="bg-navy hover:bg-navy-700 text-white px-6 py-2.5 rounded-2xl font-semibold shadow-[0_4px_10px_rgba(22,38,91,0.2)] hover:shadow-[0_6px_15px_rgba(22,38,91,0.3)] transition-all active:scale-95 flex items-center gap-2">
                 <i data-lucide="plus" class="w-4 h-4"></i> <span class="hidden sm:inline">New Entry</span>

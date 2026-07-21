@@ -1,11 +1,10 @@
-// Peradilla 3:34
+{{-- Peradilla 3:34 --}}
 @extends('layouts.app')
 @section('page-title', 'Finance & Accounting | Accounts Payable')
 @section('page-title-heading', 'Accounts Payable')
 @section('page-subtitle', 'Manage vendor invoices, ensure timely payments, and maintain strong supplier relationships.')
 
 @section('content')
-// Peradilla 2:34
 <div class="space-y-6">
 
     <!-- ================= KPI CARDS ================= -->

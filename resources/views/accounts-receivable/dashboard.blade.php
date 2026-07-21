@@ -1,4 +1,4 @@
-//marcelo 2:34pm
+{{-- Marcelo 3:34 --}}
 @extends('layouts.app')
 
 @section('page-title', 'Accounts Receivable')

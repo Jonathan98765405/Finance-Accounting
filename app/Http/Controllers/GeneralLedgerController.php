@@ -10,6 +10,20 @@ use Illuminate\Support\Facades\DB;
 
 class GeneralLedgerController extends Controller
 {
+    /**
+     * Order entries by when they were actually recorded (created_at / id),
+     * not by their entry_date — avoids timezone mismatches between
+     * entry_date (business date on the invoice/payment) and "today"
+     * as seen by the filter.
+     */
+    protected function applySortOrder($query, Request $request)
+    {
+        $direction = $request->input('sort', 'latest') === 'oldest' ? 'asc' : 'desc';
+
+        return $query->orderBy('created_at', $direction)
+                      ->orderBy('id', $direction);
+    }
+
     public function index(Request $request)
     {
         $query = Entry::with(['lines.account']);
@@ -31,9 +45,8 @@ class GeneralLedgerController extends Controller
             });
         }
 
-        // Only the 5 most recent entries are needed on the dashboard view.
-        $entries = $query->orderBy('entry_date', 'desc')
-            ->orderBy('id', 'desc')
+        // Only the 5 most recent (recorded) entries are needed on the dashboard view.
+        $entries = $this->applySortOrder($query, $request)
             ->take(3)
             ->get();
 
@@ -184,8 +197,7 @@ class GeneralLedgerController extends Controller
             });
         }
 
-        $entries = $query->orderBy('entry_date', 'desc')
-            ->orderBy('id', 'desc')
+        $entries = $this->applySortOrder($query, $request)
             ->paginate(15)
             ->withQueryString();
 
