@@ -566,12 +566,12 @@
                     labels: months,
                     datasets: [{
                         data: [], 
-                        borderColor: '#23387E',
-                        backgroundColor: '#23387E',
+                        borderColor: '#003399',
+                        backgroundColor: '#003399',
                         borderWidth: 3,
                         tension: 0.3,
                         pointRadius: 4,
-                        pointBackgroundColor: '#23387E'
+                        pointBackgroundColor: '#003399'
                     }]
                 },
                 options: chartOptions
@@ -583,12 +583,12 @@
                     labels: months,
                     datasets: [{
                         data: [], 
-                        borderColor: '#52B788',
-                        backgroundColor: '#52B788',
+                        borderColor: '#3CB371',
+                        backgroundColor: '#3CB371',
                         borderWidth: 3,
                         tension: 0.3,
                         pointRadius: 4,
-                        pointBackgroundColor: '#52B788'
+                        pointBackgroundColor: '#3CB371'
                     }]
                 },
                 options: chartOptions
