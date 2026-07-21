@@ -1,4 +1,7 @@
+//Coja 234
+
 @extends('layouts.app')
+
 
 @section('page-title', 'Finance & Accounting | Financial Reports')
 @section('page-title-heading', 'Financial Reports & Compliance')
