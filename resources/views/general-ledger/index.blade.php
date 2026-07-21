@@ -5,7 +5,7 @@
 @section('page-subtitle', 'Monitor journal entries, balances, accounts and financial activities.')
 
 @section('content')
-
+//Bergado 2:38pm
 @if(session('success'))
     <div class="bg-brand-green/10 border border-brand-green/20 text-brand-greenDark px-6 py-4 rounded-2xl mb-8 flex items-center shadow-sm">
         <div class="bg-brand-green/20 p-2 rounded-full mr-4">
