@@ -5,6 +5,7 @@
 @section('page-subtitle', 'Comprehensive financial planning and live forecasting of budget')
 
 @push('styles')
+garcia 2:54
     <!-- FontAwesome for the specific icons used in the budget design -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
