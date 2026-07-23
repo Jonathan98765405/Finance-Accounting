@@ -59,11 +59,15 @@
                     <label class="block text-sm font-semibold text-slate-700 mb-1.5">PO Number</label>
                     <input
                         type="text"
-                        class="w-full rounded-xl border border-slate-200 bg-white py-2.5 px-4 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-navy-600/30 transition"
+                        class="w-full rounded-xl border border-slate-100 bg-slate-50 py-2.5 px-4 text-sm shadow-sm focus:outline-none text-slate-600 cursor-not-allowed"
                         name="po_number"
+                        id="poNumberInput"
                         value="{{ old('po_number') }}"
-                        placeholder="PO-2026-001"
+                        readonly
                         required>
+                    <p class="text-[11px] text-slate-400 mt-1.5">
+                        Auto-generated. This same number is later reused as the GRN and Invoice number for this order.
+                    </p>
                 </div>
 
                 <div>
@@ -193,6 +197,21 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
+    // ---------------- Auto-generate a randomized PO number ----------------
+    // This number is reused verbatim as the GRN number (goods-receipt-create)
+    // and the Invoice number (record-invoice) so all three documents for the
+    // same order can be tied together at a glance.
+    function generatePoNumber() {
+        const year = new Date().getFullYear();
+        const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+        return `PO-${year}-${random}`;
+    }
+
+    const poNumberInput = document.getElementById('poNumberInput');
+    if (poNumberInput && !poNumberInput.value) {
+        poNumberInput.value = generatePoNumber();
+    }
 
     let itemIndex = document.querySelectorAll('#itemsBody tr').length;
 

@@ -67,6 +67,7 @@
                                 <option
                                     value="{{ $po->id }}"
                                     data-total="{{ $po->total_amount }}"
+                                    data-po-number="{{ $po->po_number }}"
                                     {{ old('purchase_order_id', $purchaseOrder?->id) == $po->id ? 'selected' : '' }}>
                                     {{ $po->po_number }} &mdash; {{ $po->supplier->name }} (₱{{ number_format($po->total_amount, 2) }})
                                 </option>
@@ -82,11 +83,16 @@
                     </label>
                     <input
                         type="text"
-                        class="w-full rounded-xl border border-slate-200 bg-white py-2.5 px-4 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-navy-600/30 transition"
+                        class="w-full rounded-xl border border-slate-100 bg-slate-50 py-2.5 px-4 text-sm shadow-sm focus:outline-none text-slate-600 cursor-not-allowed"
                         name="grn_number"
-                        value="{{ old('grn_number') }}"
-                        placeholder="GRN-2026-001"
+                        id="grnNumber"
+                        value="{{ old('grn_number', $purchaseOrder?->po_number) }}"
+                        placeholder="Select a purchase order first"
+                        readonly
                         required>
+                    <p class="text-[11px] text-slate-400 mt-1.5">
+                        Matches the selected purchase order's PO number automatically.
+                    </p>
                 </div>
 
                 <div>
@@ -144,13 +150,19 @@
 document.addEventListener('DOMContentLoaded', function () {
     const poSelect = document.getElementById('poSelect');
     const totalAmount = document.getElementById('totalAmount');
+    const grnNumber = document.getElementById('grnNumber');
 
     if (poSelect) {
         poSelect.addEventListener('change', function () {
             const selected = poSelect.options[poSelect.selectedIndex];
             const total = selected.getAttribute('data-total');
+            const poNumber = selected.getAttribute('data-po-number');
+
             if (total) {
                 totalAmount.value = parseFloat(total).toFixed(2);
+            }
+            if (poNumber && grnNumber) {
+                grnNumber.value = poNumber;
             }
         });
     }

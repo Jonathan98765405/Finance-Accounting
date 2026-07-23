@@ -61,6 +61,7 @@
                     <input type="text" 
                            class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-800 focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue transition"
                            name="invoice_number" 
+                           id="invoiceNumberInput"
                            value="{{ old('invoice_number') }}" 
                            placeholder="INV-2026-001" 
                            required>
@@ -394,7 +395,25 @@ document.addEventListener('DOMContentLoaded', function () {
     const supplierSelect = document.getElementById('supplierSelect');
     const poSelect = document.getElementById('poSelect');
     const poHelpText = document.getElementById('poHelpText');
+    const invoiceNumberInput = document.getElementById('invoiceNumberInput');
     const poOptions = Array.from(poSelect.options).filter(opt => opt.value !== '');
+
+    // ---------------- Mirror the Invoice Number to the selected PO number ----------------
+    // The <option value> for a PO IS its po_number, so poSelect.value already
+    // gives us the exact string to reuse as the invoice number.
+    function syncInvoiceNumberWithPo() {
+        if (poSelect.value) {
+            invoiceNumberInput.value = poSelect.value;
+            invoiceNumberInput.readOnly = true;
+            invoiceNumberInput.classList.add('bg-slate-50', 'cursor-not-allowed');
+        } else {
+            invoiceNumberInput.readOnly = false;
+            invoiceNumberInput.classList.remove('bg-slate-50', 'cursor-not-allowed');
+        }
+    }
+
+    poSelect.addEventListener('change', syncInvoiceNumberWithPo);
+    syncInvoiceNumberWithPo();
 
     function filterPoOptions() {
         const supplierId = supplierSelect.value;
