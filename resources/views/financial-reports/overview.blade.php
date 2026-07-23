@@ -1,7 +1,4 @@
-{{-- Coja 3:34 --}}
-
 @extends('layouts.app')
-
 
 @section('page-title', 'Finance & Accounting | Financial Reports')
 @section('page-title-heading', 'Financial Reports & Compliance')
@@ -167,11 +164,6 @@
         const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
         const monthAbbr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-        // ==========================================================================
-        // Everything below is computed server-side (FinancialReportService) from
-        // the General Ledger + fin_audits / fin_compliance_activities tables.
-        // Nothing here is hardcoded — switching years re-fetches from the server.
-        // ==========================================================================
         const CURRENT_YEAR = {{ $selectedYear }};
         const ALL_YEARS = @json($years);
         const yearOptionsHtml = (selected) => ALL_YEARS.map(y => `<option value="${y}" ${String(y) === String(selected) ? 'selected' : ''}>${y}</option>`).join('');
@@ -183,16 +175,12 @@
         let AUDITS = @json($audits);
         const AUDITS_CACHE = { [CURRENT_YEAR]: AUDITS };
 
-        // Options for the "Audit Type" dropdown in the edit modal. Built from
-        // whatever types already exist in the loaded audit records, with a
-        // sensible fallback set so the dropdown is never empty.
         const DEFAULT_AUDIT_TYPES = ['Internal', 'External', 'Regulatory', 'Financial'];
         const AUDIT_TYPES = Array.from(new Set([
             ...DEFAULT_AUDIT_TYPES,
             ...AUDITS.map(a => a.auditType).filter(Boolean),
         ]));
 
-        // Changed formatting prefix from '$' to '₱'
         function formatPHP(n) {
             return '₱' + Math.round(n).toLocaleString();
         }
@@ -206,7 +194,7 @@
         const ACTIVITIES = @json($activities);
 
         async function loadOverviewYear(year) {
-            if (String(year) === String(CURRENT_YEAR)) return; // already rendered from the page load
+            if (String(year) === String(CURRENT_YEAR)) return; 
 
             const res = await fetch(`{{ url('/financial-reports/overview/data') }}?year=${year}`, {
                 headers: { 'Accept': 'application/json' }
@@ -228,7 +216,6 @@
             return 'text-brand-orange';
         }
 
-        // Updated chart configuration callbacks to prepend '₱'
         function buildLineOptions() {
             return {
                 responsive: true,
@@ -439,72 +426,72 @@
         });
 
         function renderRecentActivities() {
-    const list = document.getElementById('recent-activities-list');
+            const list = document.getElementById('recent-activities-list');
 
-    list.innerHTML = ACTIVITIES.slice(0, 4).map(a => `
-        <div class="flex items-center justify-between gap-3">
-            <span class="flex items-center gap-2">
-                <i data-lucide="${a.icon}" class="w-4 h-4 ${a.iconColor}"></i>
+            list.innerHTML = ACTIVITIES.slice(0, 4).map(a => `
+                <div class="flex items-center justify-between gap-3">
+                    <span class="flex items-center gap-2">
+                        <i data-lucide="${a.icon}" class="w-4 h-4 ${a.iconColor}"></i>
 
-                <span class="flex items-center gap-1">
-                    <i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i>
-                    ${a.title}
-                </span>
-            </span>
+                        <span class="flex items-center gap-1">
+                            <i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i>
+                            ${a.title}
+                        </span>
+                    </span>
 
-            <span class="text-xs font-medium ${a.color}">
-                ${a.when}
-            </span>
-        </div>
-    `).join('');
+                    <span class="text-xs font-medium ${a.color}">
+                        ${a.when}
+                    </span>
+                </div>
+            `).join('');
 
-    lucide.createIcons();
-}
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
         renderRecentActivities();
 
         function openAllActivitiesModal() {
-    const rowsHtml = ACTIVITIES.map(a => `
-        <div class="flex items-start justify-between gap-3 py-3 border-b border-slate-100 last:border-0">
-            <div class="flex items-start gap-3">
-                <i data-lucide="${a.icon}" class="w-4 h-4 mt-0.5 ${a.iconColor}"></i>
+            const rowsHtml = ACTIVITIES.map(a => `
+                <div class="flex items-start justify-between gap-3 py-3 border-b border-slate-100 last:border-0">
+                    <div class="flex items-start gap-3">
+                        <i data-lucide="${a.icon}" class="w-4 h-4 mt-0.5 ${a.iconColor}"></i>
 
-                <div>
-                    <p class="text-sm font-medium text-slate-700 flex items-center gap-2">
-                        <i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i>
-                        <span>${a.title}</span>
-                    </p>
+                        <div>
+                            <p class="text-sm font-medium text-slate-700 flex items-center gap-2">
+                                <i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i>
+                                <span>${a.title}</span>
+                            </p>
 
-                    <p class="text-xs text-slate-400 mt-0.5">${a.type}</p>
-                    <p class="text-xs text-slate-500 mt-1">${a.notes}</p>
+                            <p class="text-xs text-slate-400 mt-0.5">${a.type}</p>
+                            <p class="text-xs text-slate-500 mt-1">${a.notes}</p>
+                        </div>
+                    </div>
+
+                    <span class="text-xs font-semibold ${a.color} whitespace-nowrap">
+                        ${a.when}
+                    </span>
                 </div>
-            </div>
+            `).join('');
 
-            <span class="text-xs font-semibold ${a.color} whitespace-nowrap">
-                ${a.when}
-            </span>
-        </div>
-    `).join('');
+            AppUI.openModal(`
+                <h3 class="text-lg font-bold text-navy mb-1">All Compliance Activities</h3>
+                <p class="text-sm text-slate-500 mb-2">${ACTIVITIES.length} recorded activities.</p>
 
-    AppUI.openModal(`
-        <h3 class="text-lg font-bold text-navy mb-1">All Compliance Activities</h3>
-        <p class="text-sm text-slate-500 mb-2">${ACTIVITIES.length} recorded activities.</p>
+                <div class="max-h-[26rem] overflow-y-auto pr-1">
+                    ${rowsHtml}
+                </div>
 
-        <div class="max-h-[26rem] overflow-y-auto pr-1">
-            ${rowsHtml}
-        </div>
+                <div class="flex justify-end pt-5">
+                    <button
+                        type="button"
+                        onclick="AppUI.closeModal()"
+                        class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700">
+                        Close
+                    </button>
+                </div>
+            `, 'lg');
 
-        <div class="flex justify-end pt-5">
-            <button
-                type="button"
-                onclick="AppUI.closeModal()"
-                class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700">
-                Close
-            </button>
-        </div>
-    `, 'lg');
-
-    lucide.createIcons();
-}
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
 
         document.getElementById('activities-view-all-btn').addEventListener('click', openAllActivitiesModal);
 
@@ -754,11 +741,13 @@
             }
             const editBtn = e.target.closest('.js-audit-edit');
             if (editBtn) {
+                if (AppUI.requirePermission && !AppUI.requirePermission()) return;
                 openAuditEditModal(parseInt(editBtn.dataset.id, 10));
                 return;
             }
             const deleteBtn = e.target.closest('.js-audit-delete');
             if (deleteBtn) {
+                if (AppUI.requirePermission && !AppUI.requirePermission()) return;
                 const id = parseInt(deleteBtn.dataset.id, 10);
                 if (window.confirm('Are you sure you want to delete this audit record? This cannot be undone.')) {
                     deleteAudit(id);
@@ -768,28 +757,15 @@
 
         Object.assign(AppUI, (function () {
 
-            // Called by header.blade.php's "Add Audit" modal right after the
-            // audit is actually saved to fin_audits. The header partial is
-            // shared across every financial-reports page and has no access
-            // to this page's AUDITS/REPORTS state, so it hands the freshly
-            // created row back to us here instead of trying to update the
-            // DOM itself.
             function onAuditCreated(audit) {
                 const year = String(audit.year);
 
-                // Only the currently-loaded year's live AUDITS array drives
-                // the donut + total-audits counter on the page itself.
                 if (year === String(CURRENT_YEAR)) {
                     AUDITS = [audit, ...AUDITS];
                 }
 
-                // Keep the per-year cache in sync too, so switching years
-                // (or re-opening the Audit History modal) shows it without
-                // an extra network round-trip.
                 AUDITS_CACHE[year] = [audit, ...(AUDITS_CACHE[year] || [])];
 
-                // Compliance donut + total counter only reflect the year
-                // that's currently selected in their own dropdown.
                 const complianceYearSelect = document.getElementById('compliance-year-select');
                 if (complianceYearSelect && complianceYearSelect.value === year) {
                     const counts = { Complaint: 0, Pending: 0, Failed: 0 };
@@ -810,11 +786,9 @@
                     document.getElementById('compliance-failed-pct').textContent = d.failed + '%';
                 }
 
-                // If the Audit History modal happens to be open right now,
-                // re-render its table so the new row appears immediately
-                // instead of only on next open.
                 const historyWrap = document.getElementById('audit-history-table-wrap');
                 const historyYearSelect = document.getElementById('audit-history-year-select');
+                
                 if (historyWrap && historyYearSelect) {
                     if (historyYearSelect.value === 'all') {
                         historyWrap.innerHTML = renderAuditHistoryTable('all', Object.values(AUDITS_CACHE).flat());
@@ -824,75 +798,9 @@
                 }
             }
 
-            function wirePeriodFilters() {
-                const monthSelect = document.querySelector('.js-period-month');
-                const yearSelect = document.querySelector('.js-period-year');
-                if (!monthSelect && !yearSelect) return;
-
-                function applyFilter() {
-                    const url = new URL(window.location.href);
-                    if (monthSelect) url.searchParams.set('month', monthSelect.value);
-                    if (yearSelect) url.searchParams.set('year', yearSelect.value);
-                    window.location.href = url.toString();
-                }
-
-                if (monthSelect) monthSelect.addEventListener('change', applyFilter);
-                if (yearSelect) yearSelect.addEventListener('change', applyFilter);
-
-                const params = new URLSearchParams(window.location.search);
-                if (monthSelect && params.has('month')) monthSelect.value = params.get('month');
-                if (yearSelect && params.has('year')) yearSelect.value = params.get('year');
-            }
-
-            function wireViewHooks() {
-                document.addEventListener('click', (e) => {
-                    const viewRow = e.target.closest('.js-view-row');
-                    if (viewRow) {
-                        e.preventDefault();
-                        const title = viewRow.dataset.title || 'Details';
-                        let fields = {};
-                        try { fields = JSON.parse(viewRow.dataset.fields || '{}'); } catch (err) { /* ignore */ }
-
-                        const rows = Object.entries(fields).map(([label, value]) => `
-                            <div class="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
-                              <span class="text-sm text-slate-500">${label}</span>
-                              <span class="text-sm font-semibold text-navy">${value}</span>
-                            </div>
-                          `).join('') || '<p class="text-sm text-slate-400">No additional details available.</p>';
-
-                        AppUI.openModal(`
-                            <h3 class="text-lg font-bold text-navy mb-4">${title}</h3>
-                            <div>${rows}</div>
-                            <div class="flex justify-end pt-5">
-                              <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700">Close</button>
-                            </div>
-                          `);
-                        return;
-                    }
-
-                    const viewAll = e.target.closest('.js-view-all');
-                    if (viewAll) {
-                        e.preventDefault();
-                        const title = viewAll.dataset.title || 'All Records';
-                        const targetSelector = viewAll.dataset.target;
-                        const template = targetSelector ? document.querySelector(targetSelector) : null;
-
-                        AppUI.openModal(`
-                            <h3 class="text-lg font-bold text-navy mb-4">${title}</h3>
-                            <div class="text-sm">${template ? template.innerHTML : '<p class="text-slate-400">Nothing to show yet.</p>'}</div>
-                            <div class="flex justify-end pt-5">
-                              <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700">Close</button>
-                            </div>
-                          `);
-                    }
-                });
-            }
-
-            wirePeriodFilters();
-            wireViewHooks();
-
-            return { onAuditCreated };
-
+            return {
+                onAuditCreated
+            };
         })());
     </script>
 @endpush

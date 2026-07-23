@@ -115,9 +115,17 @@
                 @endif
             </p>
         </div>
-        <a href="{{ route('ledger.create') }}" class="bg-navy hover:bg-navy-700 text-white px-6 py-2.5 rounded-2xl font-semibold shadow-[0_4px_10px_rgba(22,38,91,0.2)] hover:shadow-[0_6px_15px_rgba(22,38,91,0.3)] transition-all active:scale-95 flex items-center gap-2">
-            <i data-lucide="plus" class="w-4 h-4"></i> <span class="hidden sm:inline">New Entry</span>
-        </a>
+        
+        {{-- PERMISSION CHECK FOR NEW ENTRY BUTTON --}}
+        @if(\App\Models\Role::activeRoleCanManageLedger())
+            <a href="{{ route('ledger.create') }}" class="bg-navy hover:bg-navy-700 text-white px-6 py-2.5 rounded-2xl font-semibold shadow-[0_4px_10px_rgba(22,38,91,0.2)] hover:shadow-[0_6px_15px_rgba(22,38,91,0.3)] transition-all active:scale-95 flex items-center gap-2">
+                <i data-lucide="plus" class="w-4 h-4"></i> <span class="hidden sm:inline">New Entry</span>
+            </a>
+        @else
+            <button onclick="showAccessDenied()" class="bg-navy hover:bg-navy-700 text-white px-6 py-2.5 rounded-2xl font-semibold shadow-[0_4px_10px_rgba(22,38,91,0.2)] hover:shadow-[0_6px_15px_rgba(22,38,91,0.3)] transition-all active:scale-95 flex items-center gap-2">
+                <i data-lucide="plus" class="w-4 h-4"></i> <span class="hidden sm:inline">New Entry</span>
+            </button>
+        @endif
     </div>
 
     <div class="overflow-x-auto">
@@ -154,19 +162,31 @@
                             </td>
                             <td class="px-8 py-5 text-center whitespace-nowrap">
                                 <div class="flex justify-center items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                                    {{-- VIEW IS ALLOWED FOR EVERYONE --}}
                                     <a href="{{ route('ledger.show', $entry->id) }}" class="text-brand-blue hover:text-white hover:bg-brand-blue transition-all bg-brand-blue/10 w-9 h-9 flex items-center justify-center rounded-full">
                                         <i data-lucide="eye" class="w-4 h-4"></i>
                                     </a>
-                                    <a href="{{ route('ledger.edit', $entry->id) }}" class="text-brand-orange hover:text-white hover:bg-brand-orange transition-all bg-brand-orange/10 w-9 h-9 flex items-center justify-center rounded-full">
-                                        <i data-lucide="pencil" class="w-4 h-4"></i>
-                                    </a>
-                                    <form action="{{ route('ledger.delete', $entry->id) }}" method="POST" class="inline">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button onclick="return confirm('Delete this entry?')" class="text-brand-red hover:text-white hover:bg-brand-red transition-all bg-brand-red/10 w-9 h-9 flex items-center justify-center rounded-full">
+                                    
+                                    {{-- PERMISSION CHECK FOR EDIT & DELETE --}}
+                                    @if(\App\Models\Role::activeRoleCanManageLedger())
+                                        <a href="{{ route('ledger.edit', $entry->id) }}" class="text-brand-orange hover:text-white hover:bg-brand-orange transition-all bg-brand-orange/10 w-9 h-9 flex items-center justify-center rounded-full">
+                                            <i data-lucide="pencil" class="w-4 h-4"></i>
+                                        </a>
+                                        <form action="{{ route('ledger.delete', $entry->id) }}" method="POST" class="inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button onclick="return confirm('Delete this entry?')" class="text-brand-red hover:text-white hover:bg-brand-red transition-all bg-brand-red/10 w-9 h-9 flex items-center justify-center rounded-full">
+                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            </button>
+                                        </form>
+                                    @else
+                                        <button type="button" onclick="showAccessDenied()" class="text-brand-orange hover:text-white hover:bg-brand-orange transition-all bg-brand-orange/10 w-9 h-9 flex items-center justify-center rounded-full">
+                                            <i data-lucide="pencil" class="w-4 h-4"></i>
+                                        </button>
+                                        <button type="button" onclick="showAccessDenied()" class="text-brand-red hover:text-white hover:bg-brand-red transition-all bg-brand-red/10 w-9 h-9 flex items-center justify-center rounded-full">
                                             <i data-lucide="trash-2" class="w-4 h-4"></i>
                                         </button>
-                                    </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -196,3 +216,29 @@
 </div>
 
 @endsection
+
+@push('scripts')
+<script>
+    // ACCESS DENIED MODAL FUNCTION
+    function showAccessDenied() {
+        if(typeof AppUI !== 'undefined') {
+            AppUI.openModal(`
+                <div class="text-center py-4">
+                    <div class="w-12 h-12 rounded-full bg-red-100 text-brand-red mx-auto flex items-center justify-center mb-3">
+                        <i data-lucide="shield-alert" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-navy mb-2">Access Denied</h3>
+                    <p class="text-sm text-slate-500 mb-5">You don't have permission for this action.</p>
+                    <div class="flex justify-center">
+                        <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-6 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700">Understood</button>
+                    </div>
+                </div>
+            `, 'sm');
+            // Re-initialize lucide icons inside the dynamically generated modal
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+        } else {
+            alert("Access Denied: You don't have permission for this action.");
+        }
+    }
+</script>
+@endpush

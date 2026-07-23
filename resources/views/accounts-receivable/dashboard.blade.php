@@ -1,4 +1,3 @@
-{{-- Marcelo 3:34 --}}
 @extends('layouts.app')
 
 @section('page-title', 'Accounts Receivable')
@@ -8,20 +7,21 @@
 @section('content')
 <!-- Action Ribbon -->
 <div class="flex flex-wrap items-center justify-end gap-3 mb-6 no-print">
-    <a href="{{ url('/accounts-receivable/invoice') }}"
+    <a href="javascript:void(0)" onclick="handleProtectedNavigation('{{ url('/accounts-receivable/invoice') }}')"
     class="inline-flex items-center gap-2 bg-navy text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm hover:bg-navy/95 transition">
         <i data-lucide="plus" class="w-4 h-4"></i>
         New Invoice
     </a>
-    <a href="{{ route('receivable.payment') }}" class="inline-flex items-center gap-2 bg-brand-green text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm hover:bg-brand-green/95 transition">
+    <a href="javascript:void(0)" onclick="handleProtectedNavigation('{{ route('receivable.payment') }}')" 
+    class="inline-flex items-center gap-2 bg-brand-green text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm hover:bg-brand-green/95 transition">
         <i data-lucide="dollar-sign" class="w-4 h-4"></i>
         Record Payment
     </a>
-    <button type="button" onclick="openReminderModal()" class="inline-flex items-center gap-2 bg-navy text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm hover:bg-navy/95 transition">
+    <button type="button" onclick="triggerProtectedAction(openReminderModal)" class="inline-flex items-center gap-2 bg-navy text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm hover:bg-navy/95 transition">
         <i data-lucide="send" class="w-4 h-4"></i>
         Send Reminder
     </button>
-    <button type="button" onclick="openReportModal()" class="inline-flex items-center gap-2 bg-white text-slate-700 border border-slate-200 px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm hover:bg-slate-50 transition">
+    <button type="button" onclick="triggerProtectedAction(openReportModal)" class="inline-flex items-center gap-2 bg-white text-slate-700 border border-slate-200 px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm hover:bg-slate-50 transition">
         <i data-lucide="file-text" class="w-4 h-4"></i>
         Generate Report
     </button>
@@ -30,7 +30,7 @@
 <!-- Financial Indicator Summary Cards -->
 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
     <!-- Total Receivable -->
-    <div class="bg-blue-50 border border-blue-100 rounded-2xl border border-slate-200 shadow-card p-6 flex items-center justify-between">
+    <div class="bg-blue-50 border border-slate-200 shadow-card p-6 flex items-center justify-between">
         <div>
             <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Receivable</p>
             <h2 class="text-2xl font-extrabold text-navy mt-2" id="cardTotalReceivable">₱0.00</h2>
@@ -41,7 +41,7 @@
     </div>
 
     <!-- Paid Invoices -->
-    <div class="bg-emerald-50 border border-emerald-100 rounded-2xl border border-slate-200 shadow-card p-6 flex items-center justify-between">
+    <div class="bg-emerald-50 border border-slate-200 shadow-card p-6 flex items-center justify-between">
         <div>
             <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Paid Invoices</p>
             <h2 class="text-2xl font-extrabold text-brand-green mt-2" id="cardTotalPaid">₱0.00</h2>
@@ -52,7 +52,7 @@
     </div>
 
     <!-- Unpaid Invoices -->
-    <div class="bg-orange-50 border border-orange-100 rounded-2xl border border-slate-200 shadow-card p-6 flex items-center justify-between">
+    <div class="bg-orange-50 border border-slate-200 shadow-card p-6 flex items-center justify-between">
         <div>
             <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Unpaid Invoices</p>
             <h2 class="text-2xl font-extrabold text-brand-orange mt-2" id="cardTotalUnpaid">₱0.00</h2>
@@ -63,7 +63,7 @@
     </div>
 
     <!-- Overdue Invoices -->
-    <div class="bg-red-50 border border-red-100 rounded-2xl border border-slate-200 shadow-card p-6 flex items-center justify-between">
+    <div class="bg-red-50 border border-slate-200 shadow-card p-6 flex items-center justify-between">
         <div>
             <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Overdue Invoices</p>
             <h2 class="text-2xl font-extrabold text-brand-red mt-2" id="cardTotalOverdue">₱0.00</h2>
@@ -76,10 +76,8 @@
 
 <!-- Primary Dashboard Workspace Grid -->
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
-
     <!-- Left Layout Content Area -->
     <div class="xl:col-span-2 space-y-6">
-
         <!-- Invoices Datatable Card -->
         <div class="bg-white rounded-2xl shadow-card border border-slate-200 overflow-hidden">
             <div class="flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-slate-50/50">
@@ -99,9 +97,7 @@
                             <th class="px-6 py-3.5 text-center no-print">Action</th>
                         </tr>
                     </thead>
-                    <tbody id="invoicesTableBody" class="divide-y divide-slate-100 text-slate-700">
-                        <!-- Rendered systematically by JavaScript Engine -->
-                    </tbody>
+                    <tbody id="invoicesTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
                 </table>
             </div>
         </div>
@@ -112,28 +108,22 @@
                 <h3 class="font-bold text-navy text-lg">Recent Payments</h3>
                 <button type="button" onclick="openAllPaymentsModal()" class="text-sm font-semibold text-navy hover:underline">View All</button>
             </div>
-            <div id="recentPaymentsList" class="divide-y divide-slate-100">
-                <!-- Rendered systematically by JavaScript Engine -->
-            </div>
+            <div id="recentPaymentsList" class="divide-y divide-slate-100"></div>
         </div>
     </div>
 
-    <!-- Right Component Sidebar Column Widget Container -->
+    <!-- Right Sidebar Column -->
     <div class="space-y-6">
-
         <!-- Outstanding Customer Ledger Balances Widget -->
         <div class="bg-white rounded-2xl shadow-card border border-slate-200 overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
                 <h3 class="font-bold text-navy text-base">Outstanding Balances</h3>
-                <a href="{{ route('receivable.aging') }}"
-                class="text-xs font-semibold text-navy hover:underline">View All</a>
+                <a href="{{ route('receivable.aging') }}" class="text-xs font-semibold text-navy hover:underline">View All</a>
             </div>
-            <div id="outstandingList" class="divide-y divide-slate-100 max-h-[320px] overflow-y-auto">
-                <!-- Rendered systematically by JavaScript Engine -->
-            </div>
+            <div id="outstandingList" class="divide-y divide-slate-100 max-h-[320px] overflow-y-auto"></div>
         </div>
 
-        <!-- Aging of Receivables Chart and Interactive Legend Widget -->
+        <!-- Aging of Receivables -->
         <div class="bg-white rounded-2xl shadow-card border border-slate-200 p-6 flex flex-col">
             <div class="flex items-center justify-between mb-4">
                 <div>
@@ -183,20 +173,20 @@
         <div class="bg-white rounded-2xl shadow-card border border-slate-200 p-5 no-print">
             <h3 class="font-bold text-navy text-sm mb-3">Quick Actions</h3>
             <div class="grid grid-cols-2 gap-2 text-center text-xs font-semibold">
-                <a href="{{ url('/accounts-receivable/invoice') }}"
+                <a href="javascript:void(0)" onclick="handleProtectedNavigation('{{ url('/accounts-receivable/invoice') }}')"
                  class="flex flex-col items-center justify-center gap-1.5 bg-slate-50 border border-slate-200 hover:bg-navy hover:text-white hover:border-navy text-slate-700 p-3 rounded-xl transition group">
                     <i data-lucide="plus-circle" class="w-5 h-5 text-navy group-hover:text-white transition"></i>
                     <span>New Invoice</span>
                 </a>
-                <a href="{{ route('receivable.payment') }}" class="flex flex-col items-center justify-center gap-1.5 bg-slate-50 border border-slate-200 hover:bg-brand-green hover:text-white hover:border-brand-green text-slate-700 p-3 rounded-xl transition group">
+                <a href="javascript:void(0)" onclick="handleProtectedNavigation('{{ route('receivable.payment') }}')" class="flex flex-col items-center justify-center gap-1.5 bg-slate-50 border border-slate-200 hover:bg-brand-green hover:text-white hover:border-brand-green text-slate-700 p-3 rounded-xl transition group">
                     <i data-lucide="circle-dollar-sign" class="w-5 h-5 text-brand-green group-hover:text-white transition"></i>
                     <span>Payment</span>
                 </a>
-                <button type="button" onclick="openReminderModal()" class="flex flex-col items-center justify-center gap-1.5 bg-slate-50 border border-slate-200 hover:bg-brand-orange hover:text-white hover:border-brand-orange text-slate-700 p-3 rounded-xl transition group">
+                <button type="button" onclick="triggerProtectedAction(openReminderModal)" class="flex flex-col items-center justify-center gap-1.5 bg-slate-50 border border-slate-200 hover:bg-brand-orange hover:text-white hover:border-brand-orange text-slate-700 p-3 rounded-xl transition group">
                     <i data-lucide="mail" class="w-5 h-5 text-brand-orange group-hover:text-white transition"></i>
                     <span>Reminder</span>
                 </button>
-                <button type="button" onclick="openReportModal()" class="flex flex-col items-center justify-center gap-1.5 bg-slate-50 border border-slate-200 hover:bg-navy hover:text-white hover:border-navy text-slate-700 p-3 rounded-xl transition group">
+                <button type="button" onclick="triggerProtectedAction(openReportModal)" class="flex flex-col items-center justify-center gap-1.5 bg-slate-50 border border-slate-200 hover:bg-navy hover:text-white hover:border-navy text-slate-700 p-3 rounded-xl transition group">
                     <i data-lucide="bar-chart-3" class="w-5 h-5 text-navy group-hover:text-white transition"></i>
                     <span>Reports</span>
                 </button>
@@ -205,7 +195,7 @@
     </div>
 </div>
 
-<!-- Inline Context-Sensitive Table Dropdown Menu Element Structure -->
+<!-- Context Action Dropdown -->
 <div id="actionMenu" class="hidden fixed w-40 bg-white border border-slate-200 rounded-xl shadow-lg z-[9999] p-1.5 text-sm font-medium">
     <button id="viewBtn" class="flex items-center w-full gap-2 px-3 py-2 text-slate-700 hover:bg-slate-50 rounded-lg text-left">
         <i data-lucide="eye" class="w-4 h-4 text-navy"></i> View
@@ -221,27 +211,16 @@
 
 @push('scripts')
 <script>
-// ================= REAL DATABASE DATA (INJECTED BY CONTROLLER) =================
-// Sourced from AccountsReceivableController@dashboard, backed by the
-// customers / invoices / invoice_items / payments migrations.
+// Persistent role state derived safely on session refresh
+window.canManageAR = @json(\App\Models\Role::activeRoleCanManageAR());
 
 const CURRENT_DATE = new Date('{{ now()->format('Y-m-d') }}T00:00:00');
-
-// All customers (customers table)
 const customers = @json($customers);
-
-// Most recent 7 invoices, with their line items (invoices + invoice_items tables)
 let invoicesData = @json($invoices);
-
-
-// Top 5 outstanding invoices by balance (invoices table, balance > 0)
 const outstandingData = @json($outstanding);
-// Most recent 5 payments, for the widget (payments table)
 const recentPaymentsData = @json($recentPayments);
-
-// All payments, for the "View All" modal (payments table)
 const paymentsData = @json($allRecentPayments);
-// Summary card totals, computed server-side across ALL invoices (not just the 7 shown)
+
 const summaryTotals = {
     totalReceivable: {{ (float) $totalReceivable }},
     totalPaid: {{ (float) $totalPaid }},
@@ -250,7 +229,6 @@ const summaryTotals = {
     totalOverdue: {{ (float) $totalOverdue }}
 };
 
-// Aging of receivables buckets, computed server-side across ALL outstanding invoices
 const agingTotals = {
     current: {{ (float) $current }},
     days31_60: {{ (float) $days31_60 }},
@@ -258,56 +236,57 @@ const agingTotals = {
     over90: {{ (float) $over90 }}
 };
 
-const reportTypes = [
-    'Accounts Receivable Summary',
-    'Outstanding Invoices',
-    'Customer Statement',
-    'Collection Report'
-];
-
+const reportTypes = ['Accounts Receivable Summary', 'Outstanding Invoices', 'Customer Statement', 'Collection Report'];
 let agingChartInstance = null;
 
-// ================= CORE FORMATTING UTILITIES =================
+// ================= PERMISSION SECURITY INTERCEPTORS =================
+function showAccessDeniedModal() {
+    AppUI.openModal(`
+        <div class="text-center py-4">
+            <div class="w-12 h-12 rounded-full bg-red-100 text-brand-red mx-auto flex items-center justify-center mb-3">
+                <i data-lucide="shield-alert" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-lg font-bold text-navy mb-2">Access Denied</h3>
+            <p class="text-sm text-slate-500 mb-5">You don't have permission for this action.</p>
+            <div class="flex justify-center">
+                <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-6 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700">Understood</button>
+            </div>
+        </div>
+    `, 'sm');
+    if (typeof lucide !== 'undefined') { lucide.createIcons(); }
+}
+
+function handleProtectedNavigation(targetUrl) {
+    if (!window.canManageAR) {
+        showAccessDeniedModal();
+    } else {
+        window.location.href = targetUrl;
+    }
+}
+
+function triggerProtectedAction(callbackFunction, ...args) {
+    if (!window.canManageAR) {
+        showAccessDeniedModal();
+    } else {
+        callbackFunction(...args);
+    }
+}
+
+// ================= CORE UTILITIES =================
 function formatCurrency(amount) {
     return '₱' + Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatDate(dateStr) {
-
-    if (!dateStr) {
-        return 'N/A';
-    }
-
+    if (!dateStr) return 'N/A';
     const d = new Date(dateStr);
-
-    if (isNaN(d.getTime())) {
-        return 'N/A';
-    }
-
-    return d.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: '2-digit'
-    });
+    return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' });
 }
 
 function formatDateLong(dateStr) {
-
-    if (!dateStr) {
-        return 'N/A';
-    }
-
+    if (!dateStr) return 'N/A';
     const d = new Date(dateStr);
-
-    if (isNaN(d.getTime())) {
-        return 'N/A';
-    }
-
-    return d.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
+    return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 function getCustomer(customerId) {
@@ -315,59 +294,18 @@ function getCustomer(customerId) {
 }
 
 function daysBetween(dateStr) {
-
-    if (!dateStr) {
-        return 0;
-    }
-
+    if (!dateStr) return 0;
     const d = new Date(dateStr);
-
-    if (isNaN(d.getTime())) {
-        return 0;
-    }
-
-    return Math.abs(
-        Math.floor((CURRENT_DATE - d) / (1000 * 60 * 60 * 24))
-    );
+    return isNaN(d.getTime()) ? 0 : Math.abs(Math.floor((CURRENT_DATE - d) / (1000 * 60 * 60 * 24)));
 }
 
 function statusBadgeClasses(status) {
-    if (status === 'Paid') {
-        return 'bg-brand-green/10 text-brand-green';
-    }
-
-    if (status === 'Partial') {
-        return 'bg-yellow-100 text-yellow-700';
-    }
-
-    if (status === 'Unpaid') {
-        return 'bg-brand-orange/10 text-brand-orange';
-    }
-
-    if (status === 'Overdue') {
-        return 'bg-brand-red/10 text-brand-red';
-    }
-
-    return 'bg-slate-100 text-slate-600';
+    if (status === 'Paid') return 'bg-brand-green/10 text-brand-green';
+    if (status === 'Partial') return 'bg-yellow-100 text-yellow-700';
+    if (status === 'Unpaid') return 'bg-brand-orange/10 text-brand-orange';
+    return 'bg-brand-red/10 text-brand-red';
 }
 
-// ================= DATA PROCESSING LOGIC =================
-// Totals now come straight from the database (controller-computed),
-// so no client-side aggregation across the (limited) invoicesData array.
-function recalculateSummaryData() {
-    document.getElementById('cardTotalReceivable').innerText = formatCurrency(summaryTotals.totalReceivable);
-    document.getElementById('cardTotalPaid').innerText = formatCurrency(summaryTotals.totalPaid);
-    document.getElementById('cardTotalUnpaid').innerText = formatCurrency(summaryTotals.totalUnpaid);
-    document.getElementById('cardTotalOverdue').innerText = formatCurrency(summaryTotals.totalOverdue);
-}
-
-function computeAging() {
-    return agingTotals;
-}
-
-
-
-// ================= PRIMARY UI RENDERING ENGINE =================
 function renderInvoicesTable() {
     const tbody = document.getElementById('invoicesTableBody');
     if (invoicesData.length === 0) {
@@ -401,12 +339,10 @@ function renderInvoicesTable() {
 
 function renderRecentPayments() {
     const container = document.getElementById('recentPaymentsList');
-
     if (recentPaymentsData.length === 0) {
         container.innerHTML = `<div class="p-6 text-center text-slate-400 font-medium text-sm">No transaction payments posted.</div>`;
         return;
     }
-
     container.innerHTML = recentPaymentsData.map(payment => {
         const customer = getCustomer(payment.customer_id);
         return `
@@ -431,12 +367,10 @@ function renderRecentPayments() {
 
 function renderOutstandingBalances() {
     const container = document.getElementById('outstandingList');
-
     if (outstandingData.length === 0) {
         container.innerHTML = `<div class="p-6 text-center text-slate-400 font-medium text-sm">Clear balances detected across portfolios.</div>`;
         return;
     }
-
     container.innerHTML = outstandingData.map(invoice => {
         const customer = getCustomer(invoice.customer_id);
         return `
@@ -456,11 +390,10 @@ function renderOutstandingBalances() {
 }
 
 function renderAgingChart() {
-    const aging = computeAging();
-    document.getElementById('agingCurrentLabel').innerText = formatCurrency(aging.current);
-    document.getElementById('aging31_60Label').innerText = formatCurrency(aging.days31_60);
-    document.getElementById('aging61_90Label').innerText = formatCurrency(aging.days61_90);
-    document.getElementById('agingOver90Label').innerText = formatCurrency(aging.over90);
+    document.getElementById('agingCurrentLabel').innerText = formatCurrency(agingTotals.current);
+    document.getElementById('aging31_60Label').innerText = formatCurrency(agingTotals.days31_60);
+    document.getElementById('aging61_90Label').innerText = formatCurrency(agingTotals.days61_90);
+    document.getElementById('agingOver90Label').innerText = formatCurrency(agingTotals.over90);
 
     const ctx = document.getElementById('agingChart');
     if (agingChartInstance) agingChartInstance.destroy();
@@ -470,7 +403,7 @@ function renderAgingChart() {
         data: {
             labels: ['Current', '31-60 Days', '61-90 Days', '90+ Days'],
             datasets: [{
-                data: [aging.current, aging.days31_60, aging.days61_90, aging.over90],
+                data: [agingTotals.current, agingTotals.days31_60, agingTotals.days61_90, agingTotals.over90],
                 backgroundColor: ['#1FCB88', '#2F4CDD', '#F5941F', '#EF4B4B'],
                 borderWidth: 2,
                 borderColor: '#ffffff'
@@ -486,14 +419,16 @@ function renderAgingChart() {
 }
 
 function renderDashboard() {
-    recalculateSummaryData();
+    document.getElementById('cardTotalReceivable').innerText = formatCurrency(summaryTotals.totalReceivable);
+    document.getElementById('cardTotalPaid').innerText = formatCurrency(summaryTotals.totalPaid);
+    document.getElementById('cardTotalUnpaid').innerText = formatCurrency(summaryTotals.totalUnpaid);
+    document.getElementById('cardTotalOverdue').innerText = formatCurrency(summaryTotals.totalOverdue);
     renderInvoicesTable();
     renderRecentPayments();
     renderOutstandingBalances();
     renderAgingChart();
 }
 
-// ================= INTERACTIVE DROPDOWN SYSTEM =================
 function showMenu(event, id) {
     event.stopPropagation();
     const menu = document.getElementById('actionMenu');
@@ -502,8 +437,8 @@ function showMenu(event, id) {
     menu.classList.remove('hidden');
 
     document.getElementById('viewBtn').onclick = (e) => { e.stopPropagation(); openInvoiceModal(id); menu.classList.add('hidden'); };
-    document.getElementById('editBtn').onclick = (e) => { e.stopPropagation(); openEditModal(id); menu.classList.add('hidden'); };
-    document.getElementById('deleteBtn').onclick = (e) => { e.stopPropagation(); deleteInvoice(id); menu.classList.add('hidden'); };
+    document.getElementById('editBtn').onclick = (e) => { e.stopPropagation(); triggerProtectedAction(openEditModal, id); menu.classList.add('hidden'); };
+    document.getElementById('deleteBtn').onclick = (e) => { e.stopPropagation(); triggerProtectedAction(deleteInvoice, id); menu.classList.add('hidden'); };
 }
 
 document.addEventListener('click', (e) => {
@@ -511,7 +446,7 @@ document.addEventListener('click', (e) => {
     if (menu && !menu.contains(e.target)) menu.classList.add('hidden');
 });
 
-// ================= SYSTEM MODAL TRIGGERS VIA APPUI CORE =================
+// ================= ACTION MODALS =================
 function openReminderModal() {
     const customerOpts = customers.map(c => `<option value="${c.id}">${c.customer_name}</option>`).join('');
     const invoiceOpts = invoicesData.map(i => `<option value="${i.id}">${i.invoice_number} - (${formatCurrency(i.balance)})</option>`).join('');
@@ -653,12 +588,13 @@ function openInvoiceModal(id) {
 }
 
 const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
 function openEditModal(id) {
     const invoice = invoicesData.find(i => i.id === id);
     if (!invoice) return;
     const customer = getCustomer(invoice.customer_id);
 
-    const linesHtml = invoice.items.map((item, index) => `
+    const linesHtml = invoice.items.map(item => `
         <tr class="border-b border-slate-100">
             <td class="p-3"><input type="text" class="edit-description w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm" value="${item.description}" required></td>
             <td class="p-3"><input type="number" class="edit-quantity w-20 text-center border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm" value="${item.quantity}" min="1" required oninput="evaluateModalFormAggregates()"></td>
@@ -686,7 +622,7 @@ function openEditModal(id) {
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Maturity Processing Deadline</label>
-                    <input type="date" id="editDueDate" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm"value="${invoice.due_date.split('T')[0]}" required>
+                    <input type="date" id="editDueDate" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" value="${invoice.due_date.split('T')[0]}" required>
                 </div>
             </div>
             <div class="border border-slate-200 rounded-xl overflow-hidden mt-4">
@@ -710,7 +646,7 @@ function openEditModal(id) {
             </div>
             <div class="flex justify-end gap-3 pt-2">
                 <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50">Cancel All Changes</button>
-                <button type="submit" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy/95 shadow-sm">Commit Manifest Modifies</button>
+                <button type="submit" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700 shadow-sm">Commit Manifest Modifies</button>
             </div>
         </form>
     `, 'xl');
@@ -718,51 +654,44 @@ function openEditModal(id) {
     evaluateModalFormAggregates();
 
     document.getElementById('editInvoiceSubmitForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const targetId = Number(document.getElementById('editInvId').value);
+        e.preventDefault();
+        const targetId = Number(document.getElementById('editInvId').value);
+        const descriptions = document.querySelectorAll('.edit-description');
+        const quantities = document.querySelectorAll('.edit-quantity');
+        const prices = document.querySelectorAll('.edit-price');
 
-    const descriptions = document.querySelectorAll('.edit-description');
-    const quantities = document.querySelectorAll('.edit-quantity');
-    const prices = document.querySelectorAll('.edit-price');
+        const payload = {
+            invoice_date: document.getElementById('editInvoiceDate').value,
+            due_date: document.getElementById('editDueDate').value,
+            description: [], quantity: [], unit_price: []
+        };
 
-    const payload = {
-        invoice_date: document.getElementById('editInvoiceDate').value,
-        due_date: document.getElementById('editDueDate').value,
-        description: [],
-        quantity: [],
-        unit_price: []
-    };
+        descriptions.forEach((item, idx) => {
+            payload.description.push(item.value);
+            payload.quantity.push(quantities[idx].value);
+            payload.unit_price.push(prices[idx].value);
+        });
 
-    descriptions.forEach((item, idx) => {
-        payload.description.push(item.value);
-        payload.quantity.push(quantities[idx].value);
-        payload.unit_price.push(prices[idx].value);
-    });
-
-    fetch(`/accounts-receivable/invoice/${targetId}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': CSRF_TOKEN
-        },
-        body: JSON.stringify(payload)
-    })
-    .then(res => res.json())
-    .then(data => {
-        AppUI.closeModal();
-        if (data.success) {
-            AppUI.showToast(data.message || 'Invoice updated successfully.', 'success');
-            window.location.reload(); // or refetch + renderDashboard()
-        } else {
+        fetch(`/accounts-receivable/invoice/${targetId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            AppUI.closeModal();
+            if (data.success) {
+                AppUI.showToast(data.message || 'Invoice updated successfully.', 'success');
+                window.location.reload();
+            } else {
+                AppUI.showToast('Something went wrong while updating the invoice.', 'error');
+            }
+        })
+        .catch(() => {
+            AppUI.closeModal();
             AppUI.showToast('Something went wrong while updating the invoice.', 'error');
-        }
-    })
-    .catch(() => {
-        AppUI.closeModal();
-        AppUI.showToast('Something went wrong while updating the invoice.', 'error');
+        });
     });
-});
 }
 
 function evaluateModalFormAggregates() {
@@ -782,83 +711,17 @@ function evaluateModalFormAggregates() {
     document.getElementById('editTotalCalculatedLabel').innerText = formatCurrency(finalGrossTotal);
 }
 
-function saveInvoiceEdit(id) {
-    const descriptions = document.querySelectorAll('.edit-description');
-    const quantities = document.querySelectorAll('.edit-quantity');
-    const prices = document.querySelectorAll('.edit-price');
-
-    const payload = {
-        invoice_date: document.getElementById('editInvoiceDate').value,
-        due_date: document.getElementById('editDueDate').value,
-        description: [],
-        quantity: [],
-        unit_price: []
-    };
-
-    descriptions.forEach((item, index) => {
-        payload.description.push(item.value);
-        payload.quantity.push(quantities[index].value);
-        payload.unit_price.push(prices[index].value);
-    });
-
-    fetch(`/accounts-receivable/invoice/${id}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': CSRF_TOKEN
-        },
-        body: JSON.stringify(payload)
-    })
-        .then(res => res.json())
-        .then(data => {
-            AppUI.closeModal();
-            if (data.success) {
-                if (typeof AppUI.showToast === 'function') {
-                    AppUI.showToast(data.message || 'Invoice updated successfully.', 'success');
-                }
-                window.location.reload();
-            } else {
-                if (typeof AppUI.showToast === 'function') {
-                    AppUI.showToast('Something went wrong while updating the invoice.', 'error');
-                }
-            }
-        })
-        .catch(() => {
-            AppUI.closeModal();
-            if (typeof AppUI.showToast === 'function') {
-                AppUI.showToast('Something went wrong while updating the invoice.', 'error');
-            }
-        });
-}
-
 function deleteInvoice(id) {
-    console.log("Deleting:", id);
-
+    if (!confirm("Are you sure you want to delete this invoice?")) return;
     fetch(`/accounts-receivable/invoice/${id}`, {
-    method: 'DELETE',
-    headers: {
-        'Accept': 'application/json',
-        'X-CSRF-TOKEN': document
-            .querySelector('meta[name="csrf-token"]')
-            .getAttribute('content')
-    }
-})
-    .then(async res => {
-        console.log("Status:", res.status);
-
-        const data = await res.json().catch(() => null);
-        console.log("Response:", data);
-
-        if (res.ok) {
-            window.location.reload();
-        } else {
-            AppUI.showToast("Delete failed.", "error");
-        }
+        method: 'DELETE',
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN }
     })
-    .catch(err => {
-        console.error(err);
-    });
+    .then(async res => {
+        if (res.ok) { window.location.reload(); } 
+        else { AppUI.showToast("Delete failed.", "error"); }
+    })
+    .catch(() => { AppUI.showToast("Delete failed.", "error"); });
 }
 
 function openAllPaymentsModal() {
@@ -870,8 +733,7 @@ function openAllPaymentsModal() {
                 <td class="px-4 py-3 font-medium text-navy">${p.invoice_number ?? 'N/A'}</td>
                 <td class="px-4 py-3 text-right font-bold text-brand-green">${formatCurrency(p.amount)}</td>
                 <td class="px-4 py-3 text-center text-slate-500 font-medium">${formatDate(p.payment_date)}</td>
-            </tr>
-        `;
+            </tr>`;
     }).join('');
 
     AppUI.openModal(`
@@ -896,7 +758,6 @@ function openAllPaymentsModal() {
     `, 'lg');
 }
 
-// Initialization Lifecycle Hook Execution Trigger
 document.addEventListener('DOMContentLoaded', function () {
     renderDashboard();
 });

@@ -6,13 +6,11 @@ use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Validation\ValidationException;
 
 class AccountController extends Controller
 {
     /**
-     * Return the list of roles for populating the "Switch Account" dropdown.
-     * (No passwords are ever sent to the browser.)
+     * Return the list of roles.
      */
     public function roles()
     {
@@ -22,34 +20,36 @@ class AccountController extends Controller
     }
 
     /**
-     * Switch the active role for the CURRENT session, without logging out.
-     *
-     * Expects: role_key, password
+     * Switch the active role.
      */
     public function switchRole(Request $request)
     {
-        $validated = $request->validate([
-            'role_key' => ['required', 'string', 'exists:roles,role_key'],
-            'password' => ['required', 'string'],
+        $request->validate([
+            'role_key' => 'required|string|exists:roles,role_key',
+            'password' => 'required|string',
         ]);
 
-        $role = Role::where('role_key', $validated['role_key'])->firstOrFail();
+        $role = Role::where('role_key', $request->role_key)->first();
 
-        if (! Hash::check($validated['password'], $role->password)) {
-            throw ValidationException::withMessages([
-                'password' => ['The password you entered is incorrect for this role.'],
-            ]);
+        if (!Hash::check($request->password, $role->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Wrong password.',
+            ], 422);
         }
 
-        // Store the active role in the session (no logout, no re-login required).
+        // Store active role in session
         Session::put('active_role_key', $role->role_key);
         Session::put('active_role_label', $role->role_label);
+        
+        // Force session to save immediately to ensure persistence across page refreshes
+        Session::save();
 
         return response()->json([
-            'success'    => true,
-            'role_key'   => $role->role_key,
+            'success' => true,
+            'role_key' => $role->role_key,
             'role_label' => $role->role_label,
-            'message'    => "Switched to {$role->role_label}.",
+            'message' => "Switched to {$role->role_label}.",
         ]);
     }
 }

@@ -8,7 +8,6 @@
     @include('financial-reports.header')
 
     @php
-
       $fmt = fn($n) => ($n < 0 ? '-₱' : '₱') . number_format(abs($n));
 
       $statusColor = fn($status) => match ($status) {
@@ -19,32 +18,25 @@
       };
     @endphp
 
-
     {{-- ================= CASH FLOW ================= --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
-
       <div class="bg-white rounded-2xl shadow-card p-5">
         <p class="text-sm font-bold text-brand-green">Operating</p>
         <p id="cf-summary-operating" class="text-2xl font-extrabold text-navy mt-1">₱2,570,000</p>
       </div>
-
       <div class="bg-white rounded-2xl shadow-card p-5">
         <p class="text-sm font-bold text-brand-orange">Investing</p>
         <p id="cf-summary-investing" class="text-2xl font-extrabold text-navy mt-1">-₱143,000</p>
       </div>
-
       <div class="bg-white rounded-2xl shadow-card p-5">
         <p class="text-sm font-bold text-navy-600">Financing</p>
         <p id="cf-summary-financing" class="text-2xl font-extrabold text-navy mt-1">-₱69,000</p>
       </div>
-
       <div class="bg-white rounded-2xl shadow-card p-5">
         <p class="text-sm font-bold text-brand-green">Net Cash Flow</p>
         <p id="cf-summary-net" class="text-2xl font-extrabold text-navy mt-1">₱388,000</p>
       </div>
-
     </div>
-
 
     {{-- ================= MONTHLY TABLE ================= --}}
     <div class="bg-white rounded-2xl shadow-card p-6 mb-6">
@@ -74,7 +66,6 @@
               <th class="pb-2">Action</th>
             </tr>
           </thead>
-
           <tbody id="cashflow-monthly-body" class="divide-y divide-slate-100">
             {{-- Rendered by JS from CASHFLOW_BY_YEAR --}}
           </tbody>
@@ -82,32 +73,25 @@
       </div>
     </div>
 
-
     {{-- ================= TAX SUMMARY ================= --}}
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
-
       <div class="bg-white rounded-2xl shadow-card p-5">
         <p class="text-sm font-bold text-brand-orange">Total Tax Due</p>
         <p class="text-2xl font-extrabold text-navy mt-1">{{ $fmt($taxSummary['totalDue']) }}</p>
       </div>
-
       <div class="bg-white rounded-2xl shadow-card p-5">
         <p class="text-sm font-bold text-brand-green">Filed YTD</p>
         <p class="text-2xl font-extrabold text-navy mt-1">{{ $fmt($taxSummary['filedYtd']) }}</p>
       </div>
-
       <div class="bg-white rounded-2xl shadow-card p-5">
         <p class="text-sm font-bold text-slate-500">Pending Filings</p>
         <p class="text-2xl font-extrabold text-navy mt-1">{{ $taxSummary['pendingFilings'] }}</p>
       </div>
-
     </div>
-
 
     {{-- ================= TAX TABLE ================= --}}
     <div class="bg-white rounded-2xl shadow-card p-6 mb-6">
       <p class="text-sm font-bold text-navy mb-4">Tax Calculation</p>
-
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
@@ -120,7 +104,6 @@
               <th class="pb-2">Status</th>
             </tr>
           </thead>
-
           <tbody class="divide-y divide-slate-100">
             @foreach ($taxCalculation as $tax)
               <tr>
@@ -144,10 +127,8 @@
       </div>
     </div>
 
-
     {{-- ================= TAX CALENDAR (EDITABLE) ================= --}}
     <div class="bg-white rounded-2xl shadow-card p-6">
-
       <div class="flex items-center justify-between mb-4">
         <div>
           <p class="text-sm font-bold text-navy">Tax Calendar</p>
@@ -171,9 +152,7 @@
         class="hidden text-center py-10 text-sm text-slate-400 border border-dashed border-slate-200 rounded-xl">
         No filings yet. Click "Add Filing" to create one.
       </div>
-
     </div>
-
 @endsection
 
 @push('scripts')
@@ -188,12 +167,6 @@
         return (n < 0 ? '-₱' : '+₱') + Math.abs(Math.round(n)).toLocaleString();
       }
 
-      // ==========================================================================
-      // Monthly cash flow, computed server-side by FinancialReportService from
-      // the cash-account (1000) entries in gl_entry_lines, classified into
-      // Operating / Investing / Financing by their offsetting account. Nothing
-      // here is hardcoded — switching years fetches fresh data from the server.
-      // ==========================================================================
       const CF_CURRENT_YEAR = {{ $selectedYear }};
       const CASHFLOW_BY_YEAR = { [CF_CURRENT_YEAR]: @json($cashflowMonthly) };
       const TAX_SUMMARY_BY_YEAR = { [CF_CURRENT_YEAR]: @json($taxSummary) };
@@ -212,9 +185,6 @@
         TAX_CALCULATION_BY_YEAR[year] = data.taxCalculation;
       }
 
-      // ==========================================================================
-      // Summary cards (top of page) — sum of the 12 monthly rows for that year
-      // ==========================================================================
       function renderCashflowSummary(year) {
         const rows = CASHFLOW_BY_YEAR[year] || [];
         const totals = rows.reduce((acc, r) => {
@@ -231,9 +201,6 @@
         document.getElementById('cf-summary-net').textContent = cfFmt(totals.net);
       }
 
-      // ==========================================================================
-      // Monthly breakdown table + Action/View
-      // ==========================================================================
       function renderCashflowTable(year) {
         const rows = CASHFLOW_BY_YEAR[year] || [];
         document.getElementById('cashflow-monthly-body').innerHTML = rows.map((r, i) => `
@@ -287,9 +254,6 @@
         openCashflowDetailModal(btn.dataset.year, parseInt(btn.dataset.index, 10));
       });
 
-      // ==========================================================================
-      // Init + year select wiring
-      // ==========================================================================
       renderCashflowSummary(CF_CURRENT_YEAR);
       renderCashflowTable(CF_CURRENT_YEAR);
 
@@ -302,9 +266,6 @@
 
       const TAX_CAL_TYPES = ['Income Tax', 'VAT / GST', 'Payroll Tax', 'Withholding Tax'];
 
-      // ==========================================================================
-      // Tax Calculation — clicking a status badge shows the full filing detail
-      // ==========================================================================
       const TAX_STATUS_INFO = {
         Filed: {
           badge: 'bg-brand-green/10 text-brand-green',
@@ -377,13 +338,7 @@
         openTaxStatusModal(btn);
       });
 
-      // ==========================================================================
-      // TAX CALENDAR — fully editable (add / edit / delete). Persisted to
-      // fin_tax_calendar via FinancialReportsController@storeTaxCalendarItem /
-      // updateTaxCalendarItem / destroyTaxCalendarItem.
-      // ==========================================================================
       let TAX_CALENDAR_ITEMS = @json($taxCalendar);
-
       const TAX_CAL_CSRF = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
       const TAX_CAL_STORE_URL = @json(route('financial-reports.tax-calendar.store'));
       const taxCalItemUrl = (id) => `${TAX_CAL_STORE_URL}/${id}`;
@@ -571,13 +526,17 @@
         });
       }
 
+      // Front-end UI protection interceptor added for dynamic initialization
       document.getElementById('js-tax-cal-add').addEventListener('click', function () {
+        if (!AppUI.requirePermission()) return;
         openTaxCalFormModal(null);
       });
 
+      // Front-end UI protection interceptor added for row events execution loops
       document.addEventListener('click', function (e) {
         const editBtn = e.target.closest('.js-tax-cal-edit');
         if (editBtn) {
+          if (!AppUI.requirePermission()) return;
           const item = TAX_CALENDAR_ITEMS.find(i => String(i.id) === String(editBtn.dataset.id));
           if (item) openTaxCalFormModal(item);
           return;
@@ -585,6 +544,7 @@
 
         const delBtn = e.target.closest('.js-tax-cal-delete');
         if (delBtn) {
+          if (!AppUI.requirePermission()) return;
           const item = TAX_CALENDAR_ITEMS.find(i => String(i.id) === String(delBtn.dataset.id));
           AppUI.openModal(`
               <h3 class="text-lg font-bold text-navy mb-1">Delete Filing</h3>

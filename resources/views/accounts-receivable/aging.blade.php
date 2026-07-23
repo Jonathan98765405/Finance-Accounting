@@ -6,6 +6,11 @@
 
 @section('content')
 <div class="space-y-6">
+    @php
+        // Direct privilege resolution bypassing traditional middleware
+        $isAdmin = auth()->user() && auth()->user()->hasRole('admin');
+    @endphp
+
     {{-- Quick Actions Row --}}
     <div class="flex flex-wrap items-center justify-end gap-2 sm:gap-3 no-print">
         <a href="{{ url('/accounts-receivable') }}"
@@ -14,18 +19,24 @@
             Dashboard
         </a>
 
-        <a href="{{ route('receivable.aging.export.pdf') }}"
-    class="bg-brand-red text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-red-600 transition inline-flex items-center gap-2 shadow-sm">
-    <i data-lucide="file-text" class="w-4 h-4"></i>
-    Export PDF
-</a>
-        <a href="{{ route('receivable.aging.export.excel') }}"
+        <!-- Export PDF Link guarded with AppUI Modal Warning -->
+        <a href="{{ $isAdmin ? route('receivable.aging.export.pdf') : '#' }}"
+            onclick="return verifySubmoduleAccess(event, {{ $isAdmin ? 'true' : 'false' }}, 'Export PDF')"
+            class="bg-brand-red text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-red-600 transition inline-flex items-center gap-2 shadow-sm">
+            <i data-lucide="file-text" class="w-4 h-4"></i>
+            Export PDF
+        </a>
+
+        <!-- Export Excel Link guarded with AppUI Modal Warning -->
+        <a href="{{ $isAdmin ? route('receivable.aging.export.excel') : '#' }}"
+            onclick="return verifySubmoduleAccess(event, {{ $isAdmin ? 'true' : 'false' }}, 'Export Excel')"
             class="bg-brand-green text-navy px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-brand-greenDark transition inline-flex items-center gap-2 shadow-sm">
             <i data-lucide="sheet" class="w-4 h-4"></i>
             Export Excel
         </a>
 
-        <button onclick="window.print()"
+        <!-- Print Trigger guarded with AppUI Modal Warning -->
+        <button onclick="if(verifySubmoduleAccess(event, {{ $isAdmin ? 'true' : 'false' }}, 'Print Report')) window.print()"
             class="bg-navy hover:bg-navy-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition inline-flex items-center gap-2 shadow-sm">
             <i data-lucide="printer" class="w-4 h-4"></i>
             Print
@@ -34,71 +45,64 @@
 
     {{-- Summary Cards --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+        <!-- Total Outstanding -->
+        <div class="bg-navy/80 text-white rounded-2xl shadow-card p-6 flex items-center justify-between">
+            <div>
+                <p class="text-white/70 text-xs font-semibold uppercase tracking-wider">Total Outstanding</p>
+                <h2 class="text-2xl font-bold mt-2" id="cardTotalOutstanding">₱0.00</h2>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-navy/10 flex items-center justify-center">
+                <i data-lucide="wallet" class="w-6 h-6 text-white"></i>
+            </div>
+        </div>
 
- <div class="bg-navy/80 text-white rounded-2xl shadow-card p-6 flex items-center justify-between">
-    <div>
-        <p class="text-white/70 text-xs font-semibold uppercase tracking-wider">
-            Total Outstanding
-        </p>
+        <!-- Current -->
+        <div class="bg-brand-green/30 rounded-2xl shadow-card p-6 flex items-center justify-between">
+            <div>
+                <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Current</p>
+                <h2 class="text-2xl font-extrabold text-brand-greenDark mt-2" id="cardCurrent">₱0.00</h2>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-brand-green/10 flex items-center justify-center">
+                <i data-lucide="check-circle" class="w-6 h-6 text-brand-greenDark"></i>
+            </div>
+        </div>
 
-        <h2 class="text-2xl font-bold mt-2" id="cardTotalOutstanding">
-            ₱0.00
-        </h2>
-    </div>
+        <!-- 31-60 Days -->
+        <div class="bg-brand-blue/30 rounded-2xl shadow-card p-6 flex items-center justify-between">
+            <div>
+                <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">31–60 Days</p>
+                <h2 class="text-2xl font-extrabold text-brand-blue mt-2" id="card31_60">₱0.00</h2>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-brand-blue/10 flex items-center justify-center">
+                <i data-lucide="calendar" class="w-6 h-6 text-brand-blue"></i>
+            </div>
+        </div>
 
-    <div class="w-12 h-12 rounded-xl bg-navy/10 flex items-center justify-center">
-        <i data-lucide="wallet" class="w-6 h-6 text-white"></i>
-    </div>
-</div>
+        <!-- 61-90 Days -->
+        <div class="bg-brand-orange/30 rounded-2xl shadow-card p-6 flex items-center justify-between">
+            <div>
+                <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">61–90 Days</p>
+                <h2 class="text-2xl font-extrabold text-brand-orange mt-2" id="card61_90">₱0.00</h2>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-brand-orange/10 flex items-center justify-center">
+                <i data-lucide="hourglass" class="w-6 h-6 text-brand-orange"></i>
+            </div>
+        </div>
 
-<!-- Current -->
-<div class="bg-brand-green/30 rounded-2xl shadow-card p-6 flex items-center justify-between">
-    <div>
-        <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Current</p>
-        <h2 class="text-2xl font-extrabold text-brand-greenDark mt-2" id="cardCurrent">₱0.00</h2>
-    </div>
-    <div class="w-12 h-12 rounded-xl brand-green/10 flex items-center justify-center">
-        <i data-lucide="check-circle" class="w-6 h-6 text-brand-greenDark"></i>
-    </div>
-</div>
-
-<!-- 31-60 -->
-<div class="bg-brand-blue/30 rounded-2xl shadow-card p-6 flex items-center justify-between">
-    <div>
-        <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">31–60 Days</p>
-        <h2 class="text-2xl font-extrabold text-brand-blue mt-2" id="card31_60">₱0.00</h2>
-    </div>
-    <div class="w-12 h-12 rounded-xl bg-brand-blue/10 flex items-center justify-center">
-        <i data-lucide="calendar" class="w-6 h-6 text-brand-blue"></i>
-    </div>
-</div>
-
-<!-- 61-90 -->
-<div class="bg-brand-orange/30 rounded-2xl shadow-card p-6 flex items-center justify-between">
-    <div>
-        <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">61–90 Days</p>
-        <h2 class="text-2xl font-extrabold text-brand-orange mt-2" id="card61_90">₱0.00</h2>
-    </div>
-    <div class="w-12 h-12 rounded-xl bg-brand-orange/10 flex items-center justify-center">
-        <i data-lucide="hourglass" class="w-6 h-6 text-brand-orange"></i>
-    </div>
-</div>
-
-<!-- Over 90 -->
-<div class="bg-brand-red/30 rounded-2xl shadow-card p-6 flex items-center justify-between">
-    <div>
-        <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">90+ Days</p>
-        <h2 class="text-2xl font-extrabold text-brand-red mt-2" id="cardOver90">₱0.00</h2>
-    </div>
-    <div class="w-12 h-12 rounded-xl bg-brand-red/10 flex items-center justify-center">
-        <i data-lucide="alert-triangle" class="w-6 h-6 text-brand-red"></i>
-    </div>
-</div>
+        <!-- Over 90 Days -->
+        <div class="bg-brand-red/30 rounded-2xl shadow-card p-6 flex items-center justify-between">
+            <div>
+                <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">90+ Days</p>
+                <h2 class="text-2xl font-extrabold text-brand-red mt-2" id="cardOver90">₱0.00</h2>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-brand-red/10 flex items-center justify-center">
+                <i data-lucide="alert-triangle" class="w-6 h-6 text-brand-red"></i>
+            </div>
+        </div>
     </div>
 
     {{-- Charts Section --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
         <!-- Bar Chart -->
         <div class="lg:col-span-2 bg-white rounded-2xl shadow-card border border-slate-100 p-6">
             <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
@@ -107,14 +111,13 @@
                     <p class="text-sm text-slate-400">Outstanding balances by aging category</p>
                 </div>
                 <select id="chartFilter" onchange="onChartFilterChange()"
-    class="border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy bg-white text-slate-700">
-    <option value="month">This Month</option>
-    <option value="last_month">Last Month</option>
-    <option value="year">This Year</option>
-    <option value="all" selected>All</option>
-</select>
+                    class="border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy bg-white text-slate-700">
+                    <option value="month">This Month</option>
+                    <option value="last_month">Last Month</option>
+                    <option value="year">This Year</option>
+                    <option value="all" selected>All</option>
+                </select>
             </div>
-
             <div class="h-[320px]">
                 <canvas id="barChart"></canvas>
             </div>
@@ -126,46 +129,36 @@
                 <h2 class="text-lg font-bold text-navy">Distribution</h2>
                 <p class="text-sm text-slate-400">Receivable Categories</p>
             </div>
-
             <div class="h-[200px] flex items-center justify-center">
                 <canvas id="doughnutChart"></canvas>
             </div>
-
             <div class="mt-6 space-y-3">
                 <div class="flex justify-between items-center text-sm border-b border-slate-50 pb-2">
                     <span class="flex items-center gap-2 text-slate-600">
-                        <span class="w-3 h-3 rounded-full bg-brand-green"></span>
-                        Current
+                        <span class="w-3 h-3 rounded-full bg-brand-green"></span> Current
                     </span>
                     <span class="font-bold text-navy" id="legendCurrent">₱0.00</span>
                 </div>
-
                 <div class="flex justify-between items-center text-sm border-b border-slate-50 pb-2">
                     <span class="flex items-center gap-2 text-slate-600">
-                        <span class="w-3 h-3 rounded-full bg-brand-blue"></span>
-                        31-60 Days
+                        <span class="w-3 h-3 rounded-full bg-brand-blue"></span> 31-60 Days
                     </span>
                     <span class="font-bold text-navy" id="legend31_60">₱0.00</span>
                 </div>
-
                 <div class="flex justify-between items-center text-sm border-b border-slate-50 pb-2">
                     <span class="flex items-center gap-2 text-slate-600">
-                        <span class="w-3 h-3 rounded-full bg-brand-orange"></span>
-                        61-90 Days
+                        <span class="w-3 h-3 rounded-full bg-brand-orange"></span> 61-90 Days
                     </span>
                     <span class="font-bold text-navy" id="legend61_90">₱0.00</span>
                 </div>
-
                 <div class="flex justify-between items-center text-sm">
                     <span class="flex items-center gap-2 text-slate-600">
-                        <span class="w-3 h-3 rounded-full bg-brand-red"></span>
-                        90+ Days
+                        <span class="w-3 h-3 rounded-full bg-brand-red"></span> 90+ Days
                     </span>
                     <span class="font-bold text-navy" id="legendOver90">₱0.00</span>
                 </div>
             </div>
         </div>
-
     </div>
 
     {{-- Customer Aging Details Table --}}
@@ -175,11 +168,10 @@
                 <h2 class="text-lg font-bold text-navy">Customer Aging Details</h2>
                 <p class="text-slate-400 text-sm mt-0.5">Monitor customer receivables and overdue invoices.</p>
             </div>
-
             <select id="tableFilter" onchange="onTableFilterChange()"
                 class="border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy bg-white text-slate-700">
                 <option value="today">Today</option>
-                  <option value="week">This Week</option>
+                <option value="week">This Week</option>
                 <option value="month">This Month</option>
                 <option value="year">This Year</option>
                 <option value="all" selected>All</option>
@@ -200,7 +192,7 @@
                     </tr>
                 </thead>
                 <tbody id="receivablesTableBody" class="divide-y divide-slate-100 text-sm text-slate-700">
-                    <!-- Rows rendered via Javascript -->
+                    <!-- Dynamic Rows Rendered by JS -->
                 </tbody>
             </table>
         </div>
@@ -208,17 +200,12 @@
         {{-- Pagination Panel --}}
         <div class="bg-white border-t border-slate-100 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div class="text-sm text-slate-500">
-                Showing
-                <span class="font-semibold text-navy" id="pageFirstItem">0</span>
-                to
-                <span class="font-semibold text-navy" id="pageLastItem">0</span>
-                of
-                <span class="font-semibold text-navy" id="pageTotalItems">0</span>
-                receivables
+                Showing <span class="font-semibold text-navy" id="pageFirstItem">0</span> to
+                <span class="font-semibold text-navy" id="pageLastItem">0</span> of
+                <span class="font-semibold text-navy" id="pageTotalItems">0</span> receivables
             </div>
-
             <div class="flex items-center gap-1.5" id="paginationButtons">
-                <!-- Rendered by JS -->
+                <!-- Buttons Rendered by JS -->
             </div>
         </div>
     </div>
@@ -234,75 +221,76 @@
     let tableFilter = 'all';
     let chartFilter = 'all';
 
-    const invoicesData = @json($invoicesData);
-    console.log(invoicesData);
+    const invoicesData = @json($invoicesData ?? []);
     let barChartInstance = null;
     let doughnutChartInstance = null;
+
+    // Integrated custom AppUI modal warning system
+    function verifySubmoduleAccess(event, isAdmin, actionName) {
+        if (!isAdmin) {
+            event.preventDefault();
+            
+            AppUI.openModal(`
+                <div class="text-center py-4">
+                    <div class="w-12 h-12 rounded-full bg-red-100 text-brand-red mx-auto flex items-center justify-center mb-3">
+                        <i data-lucide="shield-alert" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-navy mb-2">Access Denied</h3>
+                    <p class="text-sm text-slate-500 mb-5">You don't have permission for this action.</p>
+                    <div class="flex justify-center">
+                        <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-6 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700">Understood</button>
+                    </div>
+                </div>
+            `, 'sm');
+
+            // Hydrate the lucide icon inside the newly opened modal
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+
+            return false;
+        }
+        return true;
+    }
 
     function formatCurrency(amount) {
         return '₱' + Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
     function formatDate(dateStr) {
-    const d = new Date(dateStr);
-
-    if (isNaN(d.getTime())) {
-        return 'N/A';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return 'N/A';
+        return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' });
     }
 
-    return d.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: '2-digit'
-    });
-}
-   function getCustomer(customerId) {
-
-    let invoice = invoicesData.find(
-        inv => inv.customer_id == customerId
-    );
-
-    return invoice?.customer ?? null;
-
-}
-
     function daysPastDue(dueDateStr) {
-    const due = new Date(dueDateStr);
-
-    return Math.floor(
-        (CURRENT_DATE - due) / (1000 * 60 * 60 * 24)
-    );
-}
+        const due = new Date(dueDateStr);
+        return Math.floor((CURRENT_DATE - due) / (1000 * 60 * 60 * 24));
+    }
 
     function agingBucket(dueDateStr) {
         const days = daysPastDue(dueDateStr);
 
-        if (days <= 30) return { key: 'current', label: 'Current (0–30 Days)', className: 'text-brand-greenDark' };
+        if (days <= 0) return { key: 'current', label: 'Current', className: 'text-brand-greenDark' };
+        if (days <= 30) return { key: 'current', label: '1–30 Days', className: 'text-brand-greenDark' };
         if (days <= 60) return { key: 'days31_60', label: '31–60 Days', className: 'text-brand-blue' };
         if (days <= 90) return { key: 'days61_90', label: '61–90 Days', className: 'text-brand-orange' };
         return { key: 'over90', label: '90+ Days', className: 'text-brand-red' };
     }
 
     function statusBadge(status) {
-        if (status === 'Paid') return { className: 'bg-green-100 text-brand-greenDark', label: 'Paid' };
-        if (status === 'Partial') return { className: 'bg-yellow-100 text-yellow-700', label: 'Partial' };
-        if (status === 'Overdue') return { className: 'bg-red-100 text-brand-red', label: 'Overdue' };
-        return { className: 'bg-yellow-100 text-brand-orange', label: 'Unpaid' };
-    }
-
-    function notifyExportDisabled(e) {
-        e.preventDefault();
-        AppUI.showToast('Exporting requires a backend service, which this hardcoded demo page does not have.', 'error');
+        if (status === 'Current') return { className: 'bg-green-100 text-brand-greenDark', label: 'Current' };
+        if (status === 'Pending') return { className: 'bg-blue-100 text-brand-blue', label: 'Pending' };
+        if (status === 'Overdue') return { className: 'bg-orange-100 text-brand-orange', label: 'Overdue' };
+        if (status === 'Delinquent') return { className: 'bg-red-50 text-red-600', label: 'Delinquent' };
+        return { className: 'bg-red-100 text-brand-red', label: 'Critical' };
     }
 
     function withinRange(dateStr, range) {
         const d = new Date(dateStr);
-        
         if (range === 'all') return true;
 
-        if (range === 'today') {
-            return d.getTime() === CURRENT_DATE.getTime();
-        }
+        if (range === 'today') return d.toDateString() === CURRENT_DATE.toDateString();
 
         if (range === 'week') {
             const startOfWeek = new Date(CURRENT_DATE);
@@ -321,10 +309,7 @@
             return d.getFullYear() === lastMonth.getFullYear() && d.getMonth() === lastMonth.getMonth();
         }
 
-        if (range === 'year') {
-            return d.getFullYear() === CURRENT_DATE.getFullYear();
-        }
-
+        if (range === 'year') return d.getFullYear() === CURRENT_DATE.getFullYear();
         return true;
     }
 
@@ -333,7 +318,6 @@
         invoices.forEach(inv => {
             const bucket = agingBucket(inv.due_date);
             aging[bucket.key] += Number(inv.balance ?? 0);
-
         });
         return aging;
     }
@@ -417,7 +401,6 @@
     
     function onTableFilterChange() {
         tableFilter = document.getElementById('tableFilter').value;  
-        
         currentPage = 1;
         renderTable();
     }
@@ -433,7 +416,6 @@
 
     function renderTable() {
         const filtered = getFilteredReceivables();
-        
         const totalItems = filtered.length;
         const lastPage = Math.max(Math.ceil(totalItems / PER_PAGE), 1);
 
@@ -462,21 +444,16 @@
         }
 
         tbody.innerHTML = rows.map(row => {
-            const customer = getCustomer(row.customer_id);
             const bucket = agingBucket(row.due_date);
-            const badge = statusBadge(row.status);
+            const badge = statusBadge(row.status || 'Current');
 
             return `
             <tr class="hover:bg-slate-50 transition border-b border-slate-100">
                 <td class="px-6 py-4 font-bold text-navy">
-                    ${row.invoice_number}
+                    ${row.invoice_no || 'N/A'}
                 </td>
                 <td class="px-6 py-4">
-                   <span class="font-semibold text-slate-700">${customer ? customer.customer_name : ''}</span>
-                   <br>
-                   <span class="text-xs text-slate-400">
-                   ${customer ? customer.company : ''}
-                   </span>
+                   <span class="font-semibold text-slate-700">${row.customer_name || 'Unknown Vendor'}</span>
                 </td>
                 <td class="px-6 py-4 text-slate-600">
                     ${formatDate(row.invoice_date)}
@@ -489,7 +466,7 @@
                 </td>
                 <td class="px-6 py-4">
                     <span class="${bucket.className} font-bold">
-                        ${bucket.label}
+                        ${row.aging || bucket.label}
                     </span>
                 </td>
                 <td class="px-6 py-4">
@@ -547,7 +524,9 @@
         }
 
         container.innerHTML = html;
-        lucide.createIcons();
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
     }
 
     document.addEventListener('DOMContentLoaded', function () {
