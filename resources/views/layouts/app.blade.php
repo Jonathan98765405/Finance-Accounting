@@ -262,7 +262,7 @@
                         <div>
                             <button type="button" data-submenu-toggle
                                 class="nav-link w-full flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-[15px] font-medium transition
-                                                                               {{ $item['active'] ? 'active text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
+                                                                                       {{ $item['active'] ? 'active text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
                                 <span class="flex items-center gap-3">
                                     <i data-lucide="{{ $item['icon'] }}" class="w-5 h-5 shrink-0"></i>
                                     <span>{{ $item['label'] }}</span>
@@ -278,7 +278,7 @@
                                 @foreach ($item['children'] as $child)
                                     <a href="{{ $child['href'] }}"
                                         class="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition
-                                                                                                           {{ $child['active'] ? 'text-brand-green font-semibold' : 'text-slate-300 hover:text-white' }}">
+                                                                                                                       {{ $child['active'] ? 'text-brand-green font-semibold' : 'text-slate-300 hover:text-white' }}">
                                         <span>{{ $child['label'] }}</span>
                                         @if (!empty($child['badge']))
                                             <span
@@ -293,7 +293,7 @@
                     @else
                         <a href="{{ $item['href'] }}"
                             class="nav-link flex items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium transition
-                                                                           {{ !empty($item['active']) ? 'active text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
+                                                                                   {{ !empty($item['active']) ? 'active text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
                             <i data-lucide="{{ $item['icon'] }}" class="w-5 h-5 shrink-0"></i>
                             <span>{{ $item['label'] }}</span>
                         </a>
@@ -330,7 +330,7 @@
                         <div>
                             <button type="button" data-submenu-toggle
                                 class="nav-link w-full flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-[15px] font-medium transition
-                                                                               {{ $item['active'] ? 'active text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
+                                                                                       {{ $item['active'] ? 'active text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
                                 <span class="flex items-center gap-3">
                                     <i data-lucide="{{ $item['icon'] }}" class="w-5 h-5 shrink-0"></i>
                                     <span>{{ $item['label'] }}</span>
@@ -346,7 +346,7 @@
                                 @foreach ($item['children'] as $child)
                                     <a href="{{ $child['href'] }}"
                                         class="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition
-                                                                                                           {{ $child['active'] ? 'text-brand-green font-semibold' : 'text-slate-300 hover:text-white' }}">
+                                                                                                                       {{ $child['active'] ? 'text-brand-green font-semibold' : 'text-slate-300 hover:text-white' }}">
                                         <span>{{ $child['label'] }}</span>
                                         @if (!empty($child['badge']))
                                             <span
@@ -361,7 +361,7 @@
                     @else
                         <a href="{{ $item['href'] }}"
                             class="nav-link flex items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium transition
-                                                                           {{ !empty($item['active']) ? 'active text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
+                                                                                   {{ !empty($item['active']) ? 'active text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
                             <i data-lucide="{{ $item['icon'] }}" class="w-5 h-5 shrink-0"></i>
                             <span>{{ $item['label'] }}</span>
                         </a>
@@ -767,6 +767,9 @@
                         })
                         .then((data) => {
 
+                            console.log(data);
+                            console.log(document.getElementById('welcome-role'));
+
                             document.querySelectorAll('.account-role-label').forEach((el) => {
                                 el.textContent = data.role_label;
                             });
@@ -774,6 +777,12 @@
                             document.querySelectorAll('.account-role-name').forEach((el) => {
                                 el.textContent = data.role_label;
                             });
+
+                            // Update the welcome banner
+                            const welcome = document.getElementById('welcome-role');
+                            if (welcome) {
+                                welcome.textContent = `Welcome Back, ${data.role_label.toUpperCase()}!`;
+                            }
 
                             closeModal();
                             showToast(data.message || `Switched to ${data.role_label}.`, 'success');
