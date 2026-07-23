@@ -6,6 +6,7 @@ use App\Models\AccountReceivable\Invoice as ArInvoice;
 use App\Models\AccountPayable\Invoice as ApInvoice;
 use App\Models\GeneralLedger\Entry;
 use App\Models\GeneralLedger\Account;
+use App\Models\FixedAssets\FixedAsset;
 use App\Services\FinancialReportService;
 use Illuminate\Support\Facades\Auth;
 
@@ -104,10 +105,17 @@ class DashboardController extends Controller
             $netProfit = null;
             $complianceScore = null;
         }
+        // ================= FIXED ASSETS =================\
+        try{
+            $fixedAssetsRaw = FixedAsset::sum('book_value');
+            $fixedAssets = '₱' . number_format($fixedAssetsRaw, 2);
+        } catch (\Throwable $e) {
+            report($e);
+            $fixedAssets = null;
+        }
+        
 
         // ================= TODO: remaining =================
-        
-        $fixedAssets = null;
         $budgetEntries = null;
 
         return view('dashboard.dashboard', compact(
