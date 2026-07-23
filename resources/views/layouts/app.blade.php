@@ -185,13 +185,9 @@
 <body class="bg-slate-100 text-slate-800 antialiased">
 
     @php
-        // Each item's route (if it exists) drives both its href and its
-        // active state, so the sidebar highlights the correct page
-        // automatically instead of relying on a hardcoded 'active' flag.
-        //
-        // Items can optionally have a 'children' array (currently only
-        // Account Payable does) to render a collapsible submenu instead
-        // of a plain link.
+        // Fetch current role permissions
+        $canManageAP = \App\Models\Role::activeRoleCanManageAP();
+
         $navItems = [
             ['icon' => 'layout-dashboard', 'label' => 'Dashboard', 'route' => 'dashboard'],
             ['icon' => 'book-text', 'label' => 'General Ledger', 'route' => 'ledger.index'],
@@ -213,7 +209,6 @@
             ['icon' => 'box', 'label' => 'Fixed Assets', 'route' => 'fixed-assets.index'],
             ['icon' => 'clipboard-check', 'label' => 'Financial Reports', 'route' => 'financial-reports.overview'],
             ['icon' => 'trending-up', 'label' => 'Budget Forecasting', 'route' => 'budget.view'],
-
         ];
 
         foreach ($navItems as &$item) {
@@ -223,9 +218,27 @@
 
             if (!empty($item['children'])) {
                 foreach ($item['children'] as &$child) {
-                    $child['href'] = $child['route'] && \Illuminate\Support\Facades\Route::has($child['route'])
-                        ? route($child['route'])
-                        : '#';
+                    
+                    // Check if this specific link requires AP access
+                    $isRestrictedAPLink = in_array($child['label'], [
+                        'Record Incoming Supplier Invoice',
+                        'Review & Verify Invoice',
+                        'Three-Way Match',
+                        'Track Due Dates & Schedule Payments',
+                        'Payment Processing & Remittance Advice'
+                    ]);
+
+                    // Block access if restricted and user lacks AP permissions
+                    if ($isRestrictedAPLink && !$canManageAP) {
+                        $child['href'] = '#';
+                        $child['onclick'] = 'showAccessDenied(event)';
+                    } else {
+                        $child['href'] = $child['route'] && \Illuminate\Support\Facades\Route::has($child['route'])
+                            ? route($child['route'])
+                            : '#';
+                        $child['onclick'] = '';
+                    }
+
                     $child['active'] = $child['route'] && \Illuminate\Support\Facades\Route::has($child['route'])
                         ? request()->routeIs(...($child['patterns'] ?? [$child['route']]))
                         : false;
@@ -234,10 +247,7 @@
                 $item['active'] = collect($item['children'])->contains('active', true);
             } else {
                 if ($item['route'] && \Illuminate\Support\Facades\Route::has($item['route'])) {
-                    // Extract root prefix (e.g., "financial-reports" from "financial-reports.overview")
                     $routePrefix = explode('.', $item['route'])[0];
-
-                    // Match either the exact root route OR any of its sub-routes (e.g., financial-reports.*)
                     $item['active'] = request()->routeIs($item['route']) || request()->routeIs($routePrefix . '.*');
                 } else {
                     $item['active'] = false;
@@ -276,7 +286,7 @@
                             <div data-submenu-panel
                                 class="{{ $item['active'] ? '' : 'hidden' }} mt-1 ml-4 pl-4 border-l border-white/10 space-y-0.5">
                                 @foreach ($item['children'] as $child)
-                                    <a href="{{ $child['href'] }}"
+                                    <a href="{{ $child['href'] }}" onclick="{{ $child['onclick'] ?? '' }}"
                                         class="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition
                                                                                                                                    {{ $child['active'] ? 'text-brand-green font-semibold' : 'text-slate-300 hover:text-white' }}">
                                         <span>{{ $child['label'] }}</span>
@@ -344,7 +354,7 @@
                             <div data-submenu-panel
                                 class="{{ $item['active'] ? '' : 'hidden' }} mt-1 ml-4 pl-4 border-l border-white/10 space-y-0.5">
                                 @foreach ($item['children'] as $child)
-                                    <a href="{{ $child['href'] }}"
+                                    <a href="{{ $child['href'] }}" onclick="{{ $child['onclick'] ?? '' }}"
                                         class="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition
                                                                                                                                    {{ $child['active'] ? 'text-brand-green font-semibold' : 'text-slate-300 hover:text-white' }}">
                                         <span>{{ $child['label'] }}</span>
@@ -500,6 +510,23 @@
 
     <script>
         lucide.createIcons();
+        
+        // --- Access Denied Function --- 
+        function showAccessDenied(e) {
+            if(e) e.preventDefault();
+            AppUI.openModal(`
+                <div class="text-center py-4">
+                    <div class="w-12 h-12 rounded-full bg-red-100 text-brand-red mx-auto flex items-center justify-center mb-3">
+                        <i data-lucide="shield-alert" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-navy mb-2">Access Denied</h3>
+                    <p class="text-sm text-slate-500 mb-5">You don't have permission for this action.</p>
+                    <div class="flex justify-center">
+                        <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-6 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700">Understood</button>
+                    </div>
+                </div>
+            `, 'sm');
+        }
 
         const AppUI = (function () {
 

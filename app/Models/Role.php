@@ -42,6 +42,15 @@ class Role extends Model
     ];
 
     /**
+     * NEW: Roles allowed to manage Accounts Payable.
+     */
+    public const CAN_MANAGE_AP = [
+        'administrator',
+        'ap_staff',
+        'finance_manager',
+    ];
+
+    /**
      * Check the currently active session role against a permission list.
      */
     public static function activeRoleCan(array $allowedKeys): bool
@@ -71,5 +80,13 @@ class Role extends Model
     public static function activeRoleCanManageAR(): bool
     {
         return self::activeRoleCan(self::CAN_MANAGE_AR);
+    }
+
+    /**
+     * NEW: Method helper to verify Accounts Payable write access.
+     */
+    public static function activeRoleCanManageAP(): bool
+    {
+        return self::activeRoleCan(self::CAN_MANAGE_AP);
     }
 }

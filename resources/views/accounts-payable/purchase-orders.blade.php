@@ -300,7 +300,6 @@
         document.getElementById('poNoResults').classList.toggle('hidden', visibleCount !== 0 || rows.length === 0);
     }
 
-    // ================= PO DETAILS MODAL =================
     function openPoDetails(id) {
         const modal = document.getElementById('poDetailsModal-' + id);
         if (!modal) return;
@@ -315,7 +314,6 @@
         modal.classList.remove('flex');
     }
 
-    // Close on click outside the dialog, and on Escape
     document.querySelectorAll('.po-details-modal').forEach(function (modal) {
         modal.addEventListener('click', function (e) {
             if (e.target === modal) {
@@ -325,7 +323,6 @@
         });
     });
 
-    // ================= DELETE CONFIRMATION MODAL =================
     function openDeleteConfirm(action, poNumber) {
         const modal = document.getElementById('deleteConfirmModal');
         const form = document.getElementById('deleteConfirmForm');
@@ -350,7 +347,6 @@
         if (e.target === this) closeDeleteConfirm();
     });
 
-    // Escape key closes whichever modal is open
     document.addEventListener('keydown', function (e) {
         if (e.key !== 'Escape') return;
 
@@ -363,5 +359,48 @@
         if (!deleteModal.classList.contains('hidden')) closeDeleteConfirm();
     });
 </script>
+
+@if(!\App\Models\Role::activeRoleCanManageAP())
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const showAccessDenied = function(e) {
+            if(e) { e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); }
+            if (typeof AppUI !== 'undefined' && AppUI.openModal) {
+                AppUI.openModal(`
+                    <div class="text-center py-4">
+                        <div class="w-12 h-12 rounded-full bg-red-100 text-brand-red mx-auto flex items-center justify-center mb-3">
+                            <i data-lucide="shield-alert" class="w-6 h-6"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-navy mb-2">Access Denied</h3>
+                        <p class="text-sm text-slate-500 mb-5">You don't have permission for this action.</p>
+                        <div class="flex justify-center">
+                            <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-6 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700">Understood</button>
+                        </div>
+                    </div>
+                `, 'sm');
+            } else { alert("Access Denied: You don't have permission for this action."); }
+        };
+
+        const restrictedSelectors = [
+            'button[type="submit"]',
+            'a[href*="create"]',
+            'a[href*="edit"]',
+            'button[onclick*="openDeleteConfirm"]'
+        ];
+
+        document.body.addEventListener('click', function(e) {
+            const el = e.target.closest(restrictedSelectors.join(','));
+            if (el) showAccessDenied(e);
+        }, true);
+
+        document.addEventListener('submit', function(e) {
+            const form = e.target;
+            if (form.method && form.method.toUpperCase() !== 'GET') {
+                showAccessDenied(e);
+            }
+        }, true);
+    });
+</script>
+@endif
 
 @endsection
