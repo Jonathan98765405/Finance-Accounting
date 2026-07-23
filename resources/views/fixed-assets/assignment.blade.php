@@ -3,6 +3,8 @@
 @section('title', 'Asset Assignment & Maintenance')
 @section('active', 'Fixed Assets')
 
+@section('page-title-heading','Asset Assignment & Maintenance')
+
 @section('content')
 
     {{-- Header --}}
@@ -28,15 +30,15 @@
     {{-- Sub-header --}}
     <div class="flex items-start justify-between">
         <div>
-            <h2 class="text-lg font-bold" style="color:#173A66;">Asset Assignment &amp; Maintenance</h2>
+            <h2 class="text-lg font-bold" style="color:#173A66;">Asset Overview</h2>
             <p class="text-gray-500 text-sm mt-0.5">View asset details, assign to employee or department, and manage maintenance schedule and history.</p>
         </div>
         <div class="flex gap-3 shrink-0">
             <a href="{{ url('/fixed-assets/register') }}"
-               class="px-5 py-2 rounded-md text-sm font-semibold border" style="border-color:#22B57A;color:#22B57A;background:#fff;">
+              class="px-5 py-2 rounded-md text-white text-sm font-semibold shadow" style="background:#22B57A;">
                 Registration
             </a>
-            <button class="px-5 py-2 rounded-md text-white text-sm font-semibold shadow" style="background:#22B57A;">
+            <button class="px-5 py-2 rounded-md text-white text-sm font-semibold shadow" style="background:#173A66;">
                 Assignment
             </button>
         </div>

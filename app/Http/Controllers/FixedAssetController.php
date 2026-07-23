@@ -58,9 +58,9 @@ class FixedAssetController extends Controller
         $categories = AssetCategory::all();
 
         $nextNumber = FixedAsset::count() + 1;
-        $nextTag = 'FA-' . date('Y') . '-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+        $tag = 'FA-' . date('Y') . '-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
 
-        return view('fixed-assets.register', compact('categories', 'nextTag'));
+        return view('fixed-assets.register', compact('categories', 'tag'));
     }
 
     public function store(Request $request)
