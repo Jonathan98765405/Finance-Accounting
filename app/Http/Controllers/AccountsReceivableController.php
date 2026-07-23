@@ -741,7 +741,7 @@ return view('accounts-receivable.aging', compact(
     /**
      * Send/record a reminder for an invoice.
      */
-   public function storeReminder(Request $request)
+    public function storeReminder(Request $request)
 {
     $request->validate([
         'customer_id' => 'required',
@@ -761,6 +761,7 @@ return view('accounts-receivable.aging', compact(
         'message' => 'Reminder sent successfully!',
     ]);
 }
+
 
     /**
      * Generate a filtered Accounts Receivable report.

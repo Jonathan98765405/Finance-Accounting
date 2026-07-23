@@ -457,15 +457,15 @@ function openReminderModal() {
         <form id="reminderSubmitForm" class="space-y-4">
             <div>
                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Select Customer</label>
-                <select class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-navy" required>${customerOpts}</select>
+                <select id="reminderCustomerSelect" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-navy" required>${customerOpts}</select>
             </div>
             <div>
                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Select Pending Invoice</label>
-                <select class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-navy" required>${invoiceOpts}</select>
+                <select id="reminderInvoiceSelect" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-navy" required>${invoiceOpts}</select>
             </div>
             <div>
                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Custom Broadcast Message</label>
-                <textarea rows="4" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-navy resize-none" required>Dear Customer,\n\nThis is a friendly statement alert confirming that your outstanding portfolio invoices have reached maturation maturity parameters. Kindly arrange settlement processing coordinates.\n\nThank you.</textarea>
+                <textarea id="reminderMessageText" rows="4" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-navy resize-none" required>Dear Customer,\n\nThis is a friendly statement alert confirming that your outstanding portfolio invoices have reached maturation maturity parameters. Kindly arrange settlement processing coordinates.\n\nThank you.</textarea>
             </div>
             <div class="flex justify-end gap-3 pt-2">
                 <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50">Cancel</button>
@@ -476,10 +476,61 @@ function openReminderModal() {
 
     document.getElementById('reminderSubmitForm').addEventListener('submit', function(e) {
         e.preventDefault();
+
+        const customerId = document.getElementById('reminderCustomerSelect').value;
+        const invoiceId = document.getElementById('reminderInvoiceSelect').value;
+        const message = document.getElementById('reminderMessageText').value;
+
+        const customer = customers.find(c => String(c.id) === String(customerId));
+        const invoice = invoicesData.find(i => String(i.id) === String(invoiceId));
+
+    fetch('/accounts-receivable/reminder', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+    },
+    body: JSON.stringify({
+        customer_id: customerId,
+        invoice_id: invoiceId,
+        message: message
+    })
+})
+.then(async response => {
+    const text = await response.text();
+
+    console.log('STATUS:', response.status);
+    console.log('BODY:', text);
+
+    return JSON.parse(text);
+})
+.then(data => {
+
+    if(data.success){
+
         AppUI.closeModal();
-        AppUI.showToast('Billing compliance reminder successfully sent.', 'success');
+
+        AppUI.showToast(
+            'Billing compliance reminder successfully sent.',
+            'success'
+        );
+
+    }
+
+})
+.catch(error => {
+    console.error(error);
+
+    AppUI.showToast(
+        'Failed to send reminder.',
+        'error'
+    );
+});
+       
     });
 }
+
 
 function openReportModal() {
     const typeOpts = reportTypes.map(r => `<option>${r}</option>`).join('');
