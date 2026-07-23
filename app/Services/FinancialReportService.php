@@ -299,7 +299,7 @@ class FinancialReportService
                 $monthly[$month]['operating'] += $netMovement;
             }
         }
-
+        
         $result = [];
         foreach ($monthly as $m => $totals) {
             $result[] = [

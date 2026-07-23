@@ -128,8 +128,15 @@
         }
 
         @keyframes toast-in {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* ---------- Mobile sidebar drawer ---------- */
@@ -155,9 +162,20 @@
         }
 
         @media print {
-            aside, .no-print { display: none !important; }
-            main { padding: 0 !important; max-width: 100% !important; }
-            body { background: white !important; }
+
+            aside,
+            .no-print {
+                display: none !important;
+            }
+
+            main {
+                padding: 0 !important;
+                max-width: 100% !important;
+            }
+
+            body {
+                background: white !important;
+            }
         }
     </style>
 
@@ -195,7 +213,7 @@
             ['icon' => 'box', 'label' => 'Fixed Assets', 'route' => 'fixed-assets.index'],
             ['icon' => 'clipboard-check', 'label' => 'Financial Reports', 'route' => 'financial-reports.overview'],
             ['icon' => 'trending-up', 'label' => 'Budget Forecasting', 'route' => 'budget.view'],
-            
+
         ];
 
         foreach ($navItems as &$item) {
@@ -218,7 +236,7 @@
                 if ($item['route'] && \Illuminate\Support\Facades\Route::has($item['route'])) {
                     // Extract root prefix (e.g., "financial-reports" from "financial-reports.overview")
                     $routePrefix = explode('.', $item['route'])[0];
-                    
+
                     // Match either the exact root route OR any of its sub-routes (e.g., financial-reports.*)
                     $item['active'] = request()->routeIs($item['route']) || request()->routeIs($routePrefix . '.*');
                 } else {
@@ -232,7 +250,8 @@
     <div class="flex min-h-screen">
 
         {{-- ============ SIDEBAR (desktop) ============ --}}
-        <aside class="hidden lg:flex fixed left-0 top-0 h-screen w-72 flex-col bg-navy text-white px-6 py-8 overflow-y-auto z-50">
+        <aside
+            class="hidden lg:flex fixed left-0 top-0 h-screen w-72 flex-col bg-navy text-white px-6 py-8 overflow-y-auto z-50">
             <div class="mb-10">
                 <h1 class="text-2xl font-extrabold leading-tight">Finance &amp;<br>Accounting</h1>
             </div>
@@ -241,27 +260,29 @@
                 @foreach ($navItems as $item)
                     @if (!empty($item['children']))
                         <div>
-                            <button type="button"
-                                data-submenu-toggle
+                            <button type="button" data-submenu-toggle
                                 class="nav-link w-full flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-[15px] font-medium transition
-                                       {{ $item['active'] ? 'active text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
+                                                                               {{ $item['active'] ? 'active text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
                                 <span class="flex items-center gap-3">
                                     <i data-lucide="{{ $item['icon'] }}" class="w-5 h-5 shrink-0"></i>
                                     <span>{{ $item['label'] }}</span>
                                 </span>
-                                <span data-chevron class="shrink-0 transition-transform {{ $item['active'] ? 'rotate-180' : '' }}">
+                                <span data-chevron
+                                    class="shrink-0 transition-transform {{ $item['active'] ? 'rotate-180' : '' }}">
                                     <i data-lucide="chevron-down" class="w-4 h-4"></i>
                                 </span>
                             </button>
 
-                            <div data-submenu-panel class="{{ $item['active'] ? '' : 'hidden' }} mt-1 ml-4 pl-4 border-l border-white/10 space-y-0.5">
+                            <div data-submenu-panel
+                                class="{{ $item['active'] ? '' : 'hidden' }} mt-1 ml-4 pl-4 border-l border-white/10 space-y-0.5">
                                 @foreach ($item['children'] as $child)
                                     <a href="{{ $child['href'] }}"
                                         class="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition
-                                               {{ $child['active'] ? 'text-brand-green font-semibold' : 'text-slate-300 hover:text-white' }}">
+                                                                                                           {{ $child['active'] ? 'text-brand-green font-semibold' : 'text-slate-300 hover:text-white' }}">
                                         <span>{{ $child['label'] }}</span>
                                         @if (!empty($child['badge']))
-                                            <span class="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-orange px-1.5 text-[11px] font-bold text-white">
+                                            <span
+                                                class="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-orange px-1.5 text-[11px] font-bold text-white">
                                                 {{ $child['badge'] }}
                                             </span>
                                         @endif
@@ -272,7 +293,7 @@
                     @else
                         <a href="{{ $item['href'] }}"
                             class="nav-link flex items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium transition
-                                   {{ !empty($item['active']) ? 'active text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
+                                                                           {{ !empty($item['active']) ? 'active text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
                             <i data-lucide="{{ $item['icon'] }}" class="w-5 h-5 shrink-0"></i>
                             <span>{{ $item['label'] }}</span>
                         </a>
@@ -280,18 +301,21 @@
                 @endforeach
             </nav>
 
-            <div class="mt-8 flex items-center gap-3 rounded-2xl bg-brand-green/90 px-4 py-3">
-                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-navy text-white font-bold">H</div>
-                <div class="leading-tight">
-                    <p class="font-semibold text-navy text-sm">Harvie Marcelo</p>
-                    <p class="text-navy/70 text-xs">ADMIN</p>
+            <button type="button" onclick="AppUI.openAccountModal()"
+                class="account-trigger mt-8 flex items-center gap-3 rounded-2xl bg-brand-green/90 px-4 py-3 text-left hover:bg-brand-green transition">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-navy text-white">
+                    <i data-lucide="user" class="w-5 h-5"></i>
                 </div>
-            </div>
+                <p class="account-role-name font-bold text-navy text-sm uppercase">
+                    {{ session('active_role_label', 'Administrator') }}
+                </p>
+            </button>
         </aside>
 
         {{-- ============ SIDEBAR (mobile drawer) ============ --}}
         <div id="mobile-sidebar-backdrop" class="lg:hidden" onclick="AppUI.closeMobileSidebar()"></div>
-        <aside id="mobile-sidebar" class="lg:hidden fixed left-0 top-0 h-screen w-72 flex flex-col bg-navy text-white px-6 py-8 overflow-y-auto z-[70]">
+        <aside id="mobile-sidebar"
+            class="lg:hidden fixed left-0 top-0 h-screen w-72 flex flex-col bg-navy text-white px-6 py-8 overflow-y-auto z-[70]">
             <div class="mb-10 flex items-center justify-between">
                 <h1 class="text-2xl font-extrabold leading-tight">Finance &amp;<br>Accounting</h1>
                 <button type="button" onclick="AppUI.closeMobileSidebar()"
@@ -304,27 +328,29 @@
                 @foreach ($navItems as $item)
                     @if (!empty($item['children']))
                         <div>
-                            <button type="button"
-                                data-submenu-toggle
+                            <button type="button" data-submenu-toggle
                                 class="nav-link w-full flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-[15px] font-medium transition
-                                       {{ $item['active'] ? 'active text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
+                                                                               {{ $item['active'] ? 'active text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
                                 <span class="flex items-center gap-3">
                                     <i data-lucide="{{ $item['icon'] }}" class="w-5 h-5 shrink-0"></i>
                                     <span>{{ $item['label'] }}</span>
                                 </span>
-                                <span data-chevron class="shrink-0 transition-transform {{ $item['active'] ? 'rotate-180' : '' }}">
+                                <span data-chevron
+                                    class="shrink-0 transition-transform {{ $item['active'] ? 'rotate-180' : '' }}">
                                     <i data-lucide="chevron-down" class="w-4 h-4"></i>
                                 </span>
                             </button>
 
-                            <div data-submenu-panel class="{{ $item['active'] ? '' : 'hidden' }} mt-1 ml-4 pl-4 border-l border-white/10 space-y-0.5">
+                            <div data-submenu-panel
+                                class="{{ $item['active'] ? '' : 'hidden' }} mt-1 ml-4 pl-4 border-l border-white/10 space-y-0.5">
                                 @foreach ($item['children'] as $child)
                                     <a href="{{ $child['href'] }}"
                                         class="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition
-                                               {{ $child['active'] ? 'text-brand-green font-semibold' : 'text-slate-300 hover:text-white' }}">
+                                                                                                           {{ $child['active'] ? 'text-brand-green font-semibold' : 'text-slate-300 hover:text-white' }}">
                                         <span>{{ $child['label'] }}</span>
                                         @if (!empty($child['badge']))
-                                            <span class="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-orange px-1.5 text-[11px] font-bold text-white">
+                                            <span
+                                                class="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-orange px-1.5 text-[11px] font-bold text-white">
                                                 {{ $child['badge'] }}
                                             </span>
                                         @endif
@@ -335,7 +361,7 @@
                     @else
                         <a href="{{ $item['href'] }}"
                             class="nav-link flex items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium transition
-                                   {{ !empty($item['active']) ? 'active text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
+                                                                           {{ !empty($item['active']) ? 'active text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white' }}">
                             <i data-lucide="{{ $item['icon'] }}" class="w-5 h-5 shrink-0"></i>
                             <span>{{ $item['label'] }}</span>
                         </a>
@@ -343,17 +369,19 @@
                 @endforeach
             </nav>
 
-            <div class="mt-8 flex items-center gap-3 rounded-2xl bg-brand-green/90 px-4 py-3">
-                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-navy text-white font-bold">H</div>
-                <div class="leading-tight">
-                    <p class="font-semibold text-navy text-sm">Harvie Marcelo</p>
-                    <p class="text-navy/70 text-xs">ADMIN</p>
+            <button type="button" onclick="AppUI.openAccountModal()"
+                class="account-trigger mt-8 flex items-center gap-3 rounded-2xl bg-brand-green/90 px-4 py-3 text-left hover:bg-brand-green transition">
+                <div class="flex h-14 w-14 items-center justify-center rounded-full bg-navy text-white">
+                    <i data-lucide="user" class="w-7 h-7"></i>
                 </div>
-            </div>
+                <p class="account-role-name font-bold text-navy text-sm uppercase">
+                    {{ session('active_role_label', 'Administrator') }}
+                </p>
+            </button>
         </aside>
 
         {{-- ============ MAIN CONTENT ============ --}}
-          <main class="flex-1 lg:ml-72 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-[1600px] mx-auto w-full">
+        <main class="flex-1 lg:ml-72 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-[1600px] mx-auto w-full">
 
             {{-- Header --}}
             <div class="flex items-start justify-between gap-4 mb-4">
@@ -366,7 +394,8 @@
                         <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-navy">
                             @yield('page-title-heading', 'Dashboard')</h2>
                         <p class="text-slate-500 mt-1 text-sm sm:text-base">
-                            @yield('page-subtitle', 'Monitor your financial performance and accounting activities in one place.')</p>
+                            @yield('page-subtitle', 'Monitor your financial performance and accounting activities in one place.')
+                        </p>
                     </div>
                 </div>
 
@@ -380,10 +409,13 @@
                                 class="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-brand-red text-white text-[10px] font-bold">3</span>
                         </button>
 
-                        <div id="notif-panel" class="dropdown-panel w-80 max-w-[85vw] bg-white rounded-2xl shadow-card border border-slate-100 p-4">
+                        <div id="notif-panel"
+                            class="dropdown-panel w-80 max-w-[85vw] bg-white rounded-2xl shadow-card border border-slate-100 p-4">
                             <div class="flex items-center justify-between mb-3">
                                 <p class="font-bold text-navy text-sm">Notifications</p>
-                                <button id="notif-mark-read" type="button" class="text-xs font-semibold text-navy-600 hover:underline">Mark all as read</button>
+                                <button id="notif-mark-read" type="button"
+                                    class="text-xs font-semibold text-navy-600 hover:underline">Mark all as
+                                    read</button>
                             </div>
                             <div id="notif-list" class="space-y-3 max-h-80 overflow-y-auto">
                                 @php
@@ -396,7 +428,8 @@
                                 @endphp
                                 @foreach ($notifications as $n)
                                     <div class="flex items-start gap-3 {{ $n['unread'] ? '' : 'opacity-60' }}">
-                                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full {{ $n['color'] }} text-white">
+                                        <div
+                                            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full {{ $n['color'] }} text-white">
                                             <i data-lucide="{{ $n['icon'] }}" class="w-4 h-4"></i>
                                         </div>
                                         <div class="flex-1">
@@ -419,16 +452,20 @@
                             <i data-lucide="circle-help" class="w-5 h-5 text-navy"></i>
                         </button>
 
-                        <div id="help-panel" class="dropdown-panel w-72 max-w-[85vw] bg-white rounded-2xl shadow-card border border-slate-100 p-4">
+                        <div id="help-panel"
+                            class="dropdown-panel w-72 max-w-[85vw] bg-white rounded-2xl shadow-card border border-slate-100 p-4">
                             <p class="font-bold text-navy text-sm mb-3">Help &amp; Support</p>
                             <div class="space-y-1 text-sm">
-                                <a href="#" class="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-slate-600 hover:bg-slate-50">
+                                <a href="#"
+                                    class="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-slate-600 hover:bg-slate-50">
                                     <i data-lucide="book-open" class="w-4 h-4 text-navy-600"></i> Documentation
                                 </a>
-                                <a href="#" class="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-slate-600 hover:bg-slate-50">
+                                <a href="#"
+                                    class="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-slate-600 hover:bg-slate-50">
                                     <i data-lucide="life-buoy" class="w-4 h-4 text-navy-600"></i> Contact Support
                                 </a>
-                                <a href="#" class="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-slate-600 hover:bg-slate-50">
+                                <a href="#"
+                                    class="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-slate-600 hover:bg-slate-50">
                                     <i data-lucide="keyboard" class="w-4 h-4 text-navy-600"></i> Keyboard Shortcuts
                                 </a>
                                 <button type="button" onclick="AppUI.openReportIssueModal()"
@@ -448,7 +485,8 @@
 
     {{-- ============ MODAL ============ --}}
     <div id="app-modal-backdrop" onclick="if(event.target === this) AppUI.closeModal()">
-        <div id="app-modal-box" class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-5 sm:p-6 relative transition-all">
+        <div id="app-modal-box"
+            class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-5 sm:p-6 relative transition-all">
             <button type="button" onclick="AppUI.closeModal()"
                 class="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 z-10">
                 <i data-lucide="x" class="w-4 h-4"></i>
@@ -635,17 +673,137 @@
                 });
             }
 
+            // ---------------- Account / Switch Account ----------------
+            const ROLES = [
+                { key: 'administrator', label: 'Administrator' },
+                { key: 'finance_manager', label: 'Finance Manager' },
+                { key: 'accountant', label: 'Accountant' },
+                { key: 'ap_staff', label: 'AP Staff' },
+                { key: 'ar_staff', label: 'AR Staff' },
+                { key: 'fa_staff', label: 'FA Staff' },
+                { key: 'auditor', label: 'Auditor' },
+            ];
+
+            function currentRoleLabel() {
+                const el = document.querySelector('.account-role-name, .account-role-label');
+                return el ? el.textContent.trim() : 'Administrator';
+            }
+
+            function openAccountModal() {
+                openModal(`
+      <div class="flex items-center gap-3 mb-5">
+        <div class="flex h-14 w-14 items-center justify-center rounded-full bg-navy text-white">
+          <i data-lucide="user" class="w-7 h-7"></i>
+        </div>
+        <div class="leading-tight">
+          <p class="font-bold text-navy text-base uppercase">${currentRoleLabel()}</p>
+        </div>
+      </div>
+
+      <div class="border-t border-slate-100 pt-4">
+        <button type="button" onclick="AppUI.openSwitchAccountModal()"
+          class="w-full flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-navy hover:bg-slate-50 transition">
+          <span class="flex items-center gap-2.5">
+            <i data-lucide="repeat" class="w-4 h-4 text-navy-600"></i>
+            Switch Account
+          </span>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+        </button>
+      </div>
+    `, 'sm');
+            }
+            function openSwitchAccountModal() {
+                const options = ROLES.map(r => `<option value="${r.key}">${r.label}</option>`).join('');
+
+                openModal(`
+          <h3 class="text-lg font-bold text-navy mb-1">Switch Account</h3>
+          <p class="text-sm text-slate-500 mb-5">Select a role and enter its password to switch. You'll stay signed in.</p>
+          <form id="switch-account-form" class="space-y-4">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1.5">Role</label>
+              <select name="role_key" required
+                class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy">
+                <option value="" disabled selected>Select a role…</option>
+                ${options}
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1.5">Password</label>
+              <input type="password" name="password" required placeholder="Enter role password"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy">
+              <p id="switch-account-error" class="hidden text-xs text-brand-red mt-1.5"></p>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+              <button type="button" onclick="AppUI.openAccountModal()" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50">Back</button>
+              <button type="submit" id="switch-account-submit" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700">Switch</button>
+            </div>
+          </form>
+        `, 'sm');
+
+                const form = document.getElementById('switch-account-form');
+                const errorEl = document.getElementById('switch-account-error');
+                const submitBtn = document.getElementById('switch-account-submit');
+
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    errorEl.classList.add('hidden');
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Switching…';
+
+                    const formData = new FormData(form);
+
+                    fetch('{{ route("account.switch-role") }}', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json',
+                        },
+                        body: formData,
+                    })
+                        .then(async (res) => {
+                            const data = await res.json();
+                            if (!res.ok) throw data;
+                            return data;
+                        })
+                        .then((data) => {
+
+                            document.querySelectorAll('.account-role-label').forEach((el) => {
+                                el.textContent = data.role_label;
+                            });
+
+                            document.querySelectorAll('.account-role-name').forEach((el) => {
+                                el.textContent = data.role_label;
+                            });
+
+                            closeModal();
+                            showToast(data.message || `Switched to ${data.role_label}.`, 'success');
+                        })
+                        .catch((err) => {
+                            const message = err?.errors?.password?.[0]
+                                || err?.message
+                                || 'Unable to switch account. Please try again.';
+                            errorEl.textContent = message;
+                            errorEl.classList.remove('hidden');
+                        })
+                        .finally(() => {
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = 'Switch';
+                        });
+                });
+            }
+
             return {
                 openMobileSidebar, closeMobileSidebar,
                 openModal, closeModal, showToast,
                 openExportSnapshotModal,
                 openReportIssueModal,
+                openAccountModal, openSwitchAccountModal,
             };
         })();
     </script>
 
     {{-- Account Payable submenu expand/collapse — kept separate from AppUI above
-         so it can't interfere with the modal/toast/dropdown logic already there. --}}
+    so it can't interfere with the modal/toast/dropdown logic already there. --}}
     <script>
         document.querySelectorAll('[data-submenu-toggle]').forEach(function (btn) {
             btn.addEventListener('click', function () {

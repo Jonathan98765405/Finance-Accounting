@@ -8,7 +8,15 @@ use App\Http\Controllers\FinancialReportsController;
 use App\Http\Controllers\AccountsReceivableController;
 use App\Http\Controllers\BudgetController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AccountController;
 
+/**
+ * Add these lines to your existing routes/web.php
+ * (put them inside your `auth` middleware group if you have one).
+ */
+
+Route::get('/account/roles', [AccountController::class, 'roles'])->name('account.roles');
+Route::post('/account/switch-role', [AccountController::class, 'switchRole'])->name('account.switch-role');
 
 /*--------------------------------------------------------------------------
 | Dashboard
