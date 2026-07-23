@@ -7,8 +7,11 @@
 @section('content')
 <div class="space-y-6">
     @php
-        // Direct privilege resolution bypassing traditional middleware
-        $isAdmin = auth()->user() && auth()->user()->hasRole('admin');
+        use App\Models\Role;
+
+        // Check if current active session role is allowed to manage AR 
+        // Allows: 'administrator', 'ar_staff', 'finance_manager'
+        $canAccess = Role::activeRoleCanManageAR();
     @endphp
 
     {{-- Quick Actions Row --}}
@@ -20,23 +23,23 @@
         </a>
 
         <!-- Export PDF Link guarded with AppUI Modal Warning -->
-        <a href="{{ $isAdmin ? route('receivable.aging.export.pdf') : '#' }}"
-            onclick="return verifySubmoduleAccess(event, {{ $isAdmin ? 'true' : 'false' }}, 'Export PDF')"
+        <a href="{{ $canAccess ? route('receivable.aging.export.pdf') : '#' }}"
+            onclick="return verifySubmoduleAccess(event, {{ $canAccess ? 'true' : 'false' }}, 'Export PDF')"
             class="bg-brand-red text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-red-600 transition inline-flex items-center gap-2 shadow-sm">
             <i data-lucide="file-text" class="w-4 h-4"></i>
             Export PDF
         </a>
 
         <!-- Export Excel Link guarded with AppUI Modal Warning -->
-        <a href="{{ $isAdmin ? route('receivable.aging.export.excel') : '#' }}"
-            onclick="return verifySubmoduleAccess(event, {{ $isAdmin ? 'true' : 'false' }}, 'Export Excel')"
+        <a href="{{ $canAccess ? route('receivable.aging.export.excel') : '#' }}"
+            onclick="return verifySubmoduleAccess(event, {{ $canAccess ? 'true' : 'false' }}, 'Export Excel')"
             class="bg-brand-green text-navy px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-brand-greenDark transition inline-flex items-center gap-2 shadow-sm">
             <i data-lucide="sheet" class="w-4 h-4"></i>
             Export Excel
         </a>
 
         <!-- Print Trigger guarded with AppUI Modal Warning -->
-        <button onclick="if(verifySubmoduleAccess(event, {{ $isAdmin ? 'true' : 'false' }}, 'Print Report')) window.print()"
+        <button onclick="if(verifySubmoduleAccess(event, {{ $canAccess ? 'true' : 'false' }}, 'Print Report')) window.print()"
             class="bg-navy hover:bg-navy-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition inline-flex items-center gap-2 shadow-sm">
             <i data-lucide="printer" class="w-4 h-4"></i>
             Print

@@ -3,7 +3,14 @@
 @section('title', 'Asset Assignment & Maintenance')
 @section('active', 'Fixed Assets')
 
+<<<<<<< HEAD
 @section('page-title-heading','Asset Assignment & Maintenance')
+=======
+@extends('layouts.app')
+@section('page-title', 'Finance & Accounting | Fixed Assets')
+@section('page-title-heading', 'Asset Assignment')
+@section('page-subtitle', 'View asset details, assign to employee or department, and manage maintenance schedule and history.')
+>>>>>>> e33faad (Fix Export Permission on AR)
 
 @section('content')
 
