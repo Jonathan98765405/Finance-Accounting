@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+
 use App\Models\AccountReceivable\Payment;
 use App\Models\AccountReceivable\InvoiceItem;
 use App\Models\AccountReceivable\Invoice;
@@ -740,32 +741,26 @@ return view('accounts-receivable.aging', compact(
     /**
      * Send/record a reminder for an invoice.
      */
-    public function storeReminder(Request $request)
-    {
-        $request->validate([
+   public function storeReminder(Request $request)
+{
+    $request->validate([
+        'customer_id' => 'required',
+        'invoice_id' => 'required',
+        'message' => 'required',
+    ]);
 
-            'customer_id' => 'required',
-            'invoice_id' => 'required',
-            'message' => 'required',
+    Reminder::create([
+        'customer_id' => $request->customer_id,
+        'invoice_id'  => $request->invoice_id,
+        'status'      => 'Sent',
+        'message'     => $request->message,
+    ]);
 
-        ]);
-
-        Reminder::create([
-            'customer_id' => $request->customer_id,
-            'invoice_id'  => $request->invoice_id,
-            'status'      => 'Sent',
-            'message'     => $request->message,
-        ]);
-
-        if ($request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Reminder sent successfully!',
-            ]);
-        }
-
-        return redirect()->back()->with('success', 'Reminder sent successfully!');
-    }
+    return response()->json([
+        'success' => true,
+        'message' => 'Reminder sent successfully!',
+    ]);
+}
 
     /**
      * Generate a filtered Accounts Receivable report.

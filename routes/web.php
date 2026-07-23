@@ -1,5 +1,5 @@
 <?php
-
+use App\Models\AccountReceivable\Reminder;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GeneralLedgerController;
 use App\Http\Controllers\AccountsPayableController;
@@ -286,6 +286,7 @@ Route::get('/accounts-receivable/aging/export/pdf', [AccountsReceivableControlle
     ->name('receivable.aging.export.pdf');
  
 // Reminders
+
 Route::post('/accounts-receivable/reminder', [AccountsReceivableController::class, 'storeReminder'])
     ->name('receivable.reminder.store');
  
@@ -305,7 +306,8 @@ Route::post('/accounts-receivable/payment', [AccountsReceivableController::class
  
 Route::get('/accounts-receivable/customers/{id}/invoices', [AccountsReceivableController::class, 'customerInvoices'])
     ->name('receivable.customerInvoices');
- 
+
+
 /*
 |--------------------------------------------------------------------------
 | Budget Forecasting

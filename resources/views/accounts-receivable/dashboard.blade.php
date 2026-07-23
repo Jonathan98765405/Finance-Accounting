@@ -446,8 +446,12 @@ document.addEventListener('click', (e) => {
     if (menu && !menu.contains(e.target)) menu.classList.add('hidden');
 });
 
+
 // ================= ACTION MODALS =================
-function openReminderModal() {
+=======
+// ================= SYSTEM MODAL TRIGGERS VIA APPUI CORE =================
+/*function openReminderModal() {
+
     const customerOpts = customers.map(c => `<option value="${c.id}">${c.customer_name}</option>`).join('');
     const invoiceOpts = invoicesData.map(i => `<option value="${i.id}">${i.invoice_number} - (${formatCurrency(i.balance)})</option>`).join('');
 
@@ -479,6 +483,146 @@ function openReminderModal() {
         AppUI.closeModal();
         AppUI.showToast('Billing compliance reminder successfully sent.', 'success');
     });
+} */
+
+// ================= SYSTEM MODAL TRIGGERS VIA APPUI CORE =================
+
+// Shared in-memory store for sent reminders. Move this to wherever
+// your app keeps global state if you already have one.
+window.reminderHistory = window.reminderHistory || [];
+
+function openReminderModal() {
+    const customerOpts = customers.map(c => `<option value="${c.id}">${c.customer_name}</option>`).join('');
+    const invoiceOpts = invoicesData.map(i => `<option value="${i.id}">${i.invoice_number} - (${formatCurrency(i.balance)})</option>`).join('');
+
+    AppUI.openModal(`
+        <h3 class="text-xl font-bold text-navy mb-1">Send Automated Reminder</h3>
+        <p class="text-sm text-slate-400 mb-5">Accounts Receivable > Notifications Center</p>
+        <form id="reminderSubmitForm" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Select Customer</label>
+                <select id="reminderCustomerSelect" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-navy" required>${customerOpts}</select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Select Pending Invoice</label>
+                <select id="reminderInvoiceSelect" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-navy" required>${invoiceOpts}</select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Custom Broadcast Message</label>
+                <textarea id="reminderMessageText" rows="4" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-navy resize-none" required>Dear Customer,\n\nThis is a friendly statement alert confirming that your outstanding portfolio invoices have reached maturation maturity parameters. Kindly arrange settlement processing coordinates.\n\nThank you.</textarea>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50">Cancel</button>
+                <button type="submit" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy/95 shadow-sm">Dispatch Transmission</button>
+            </div>
+        </form>
+    `, 'md');
+
+    document.getElementById('reminderSubmitForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const customerId = document.getElementById('reminderCustomerSelect').value;
+        const invoiceId = document.getElementById('reminderInvoiceSelect').value;
+        const message = document.getElementById('reminderMessageText').value;
+
+        const customer = customers.find(c => String(c.id) === String(customerId));
+        const invoice = invoicesData.find(i => String(i.id) === String(invoiceId));
+
+    fetch('/accounts-receivable/reminder', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+    },
+    body: JSON.stringify({
+        customer_id: customerId,
+        invoice_id: invoiceId,
+        message: message
+    })
+})
+.then(async response => {
+    const text = await response.text();
+
+    console.log('STATUS:', response.status);
+    console.log('BODY:', text);
+
+    return JSON.parse(text);
+})
+.then(data => {
+
+    if(data.success){
+
+        AppUI.closeModal();
+
+        AppUI.showToast(
+            'Billing compliance reminder successfully sent.',
+            'success'
+        );
+
+    }
+
+})
+.catch(error => {
+    console.error(error);
+
+    AppUI.showToast(
+        'Failed to send reminder.',
+        'error'
+    );
+});
+       
+    });
+}
+
+// ================= REMINDER HISTORY MODAL =================
+function openReminderHistoryModal() {
+    const rows = window.reminderHistory.length
+        ? window.reminderHistory
+            .slice()
+            .sort((a, b) => new Date(b.sent_at) - new Date(a.sent_at))
+            .map(r => `
+                <tr class="border-b border-slate-100 last:border-0">
+                    <td class="px-4 py-3 text-sm text-slate-700">${r.customer_name}</td>
+                    <td class="px-4 py-3 text-sm text-slate-700">${r.invoice_number}</td>
+                    <td class="px-4 py-3 text-sm text-slate-700">${formatCurrency(r.amount)}</td>
+                    <td class="px-4 py-3 text-sm text-slate-500">${new Date(r.sent_at).toLocaleString()}</td>
+                    <td class="px-4 py-3 text-sm text-slate-500 capitalize">${r.channel || 'email'}</td>
+                    <td class="px-4 py-3">
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                            r.status === 'delivered'
+                                ? 'bg-emerald-50 text-emerald-600'
+                                : r.status === 'failed'
+                                    ? 'bg-red-50 text-red-600'
+                                    : 'bg-slate-100 text-slate-600'
+                        }">${r.status}</span>
+                    </td>
+                </tr>
+            `).join('')
+        : `<tr><td colspan="6" class="px-4 py-8 text-center text-sm text-slate-400">No reminders sent yet.</td></tr>`;
+
+    AppUI.openModal(`
+        <h3 class="text-xl font-bold text-navy mb-1">Reminder History</h3>
+        <p class="text-sm text-slate-400 mb-5">Accounts Receivable > Notifications Center</p>
+        <div class="overflow-x-auto border border-slate-200 rounded-xl">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="bg-slate-50 border-b border-slate-200">
+                        <th class="px-4 py-2.5 text-xs font-bold text-slate-700 uppercase tracking-wider">Customer</th>
+                        <th class="px-4 py-2.5 text-xs font-bold text-slate-700 uppercase tracking-wider">Invoice</th>
+                        <th class="px-4 py-2.5 text-xs font-bold text-slate-700 uppercase tracking-wider">Amount</th>
+                        <th class="px-4 py-2.5 text-xs font-bold text-slate-700 uppercase tracking-wider">Sent</th>
+                        <th class="px-4 py-2.5 text-xs font-bold text-slate-700 uppercase tracking-wider">Channel</th>
+                        <th class="px-4 py-2.5 text-xs font-bold text-slate-700 uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+        <div class="flex justify-end pt-4">
+            <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50">Close</button>
+        </div>
+    `, 'lg');
 }
 
 function openReportModal() {
