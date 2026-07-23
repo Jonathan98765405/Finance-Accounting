@@ -4,6 +4,9 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Models\AccountPayable\Invoice as ApInvoice;
+use App\Models\AccountReceivable\Invoice as ArInvoice;
+use App\Models\FinTaxCalendar;
 
 /**
  * Builds every number shown on the Financial Reports pages
@@ -442,30 +445,150 @@ class FinancialReportService
      * TAX (fin_tax_filings, fin_tax_calendar)
      * ========================================================= */
 
+    /**
+     * VAT rows for the Cash Flow & Tax "Tax Calculation" table, derived
+     * directly from posted AR invoices (output VAT on sales) and AP
+     * invoices (input VAT on purchases) for the year — no more reading
+     * from the disconnected fin_tax_filings table.
+     */
     public function taxCalculation(int $year): array
     {
-        return DB::table('fin_tax_filings')
-            ->where('tax_year', $year)
-            ->get()
-            ->map(fn ($t) => [
-                'type' => $t->tax_type,
-                'rate' => $t->rate,
-                'taxableAmount' => (float) $t->taxable_amount,
-                'amountDue' => (float) $t->amount_due,
-                'deadline' => Carbon::parse($t->deadline)->format('M j, Y'),
-                'status' => $t->status,
-            ])
-            ->all();
-    }
+        $salesSubtotal = (float) ArInvoice::whereYear('invoice_date', $year)->sum('subtotal');
+        $outputVat = (float) ArInvoice::whereYear('invoice_date', $year)->sum('tax');
 
-    public function taxSummary(int $year): array
-    {
-        $filings = DB::table('fin_tax_filings')->where('tax_year', $year)->get();
+        $purchasesSubtotal = (float) ApInvoice::whereYear('invoice_date', $year)->sum('subtotal');
+        $inputVat = (float) ApInvoice::whereYear('invoice_date', $year)->sum('tax');
+
+        $netVat = $outputVat - $inputVat;
+
+        // Deadline = 1 month after the tax was actually incurred, i.e.
+        // 1 month after the latest AR invoice date (for output VAT) /
+        // latest AP invoice date (for input VAT), not a fixed calendar date.
+        $lastArInvoiceDate = ArInvoice::whereYear('invoice_date', $year)->max('invoice_date');
+        $lastApInvoiceDate = ApInvoice::whereYear('invoice_date', $year)->max('invoice_date');
+
+        $arDeadline = $lastArInvoiceDate ? Carbon::parse($lastArInvoiceDate)->addMonth() : null;
+        $apDeadline = $lastApInvoiceDate ? Carbon::parse($lastApInvoiceDate)->addMonth() : null;
+
+        // Net VAT deadline follows whichever side (sales or purchases)
+        // most recently incurred tax, since that's what triggers the filing.
+        $netDeadline = collect([$arDeadline, $apDeadline])->filter()->sort()->last();
+
+        // Sync each computed obligation into fin_tax_calendar — the same
+        // table backing the editable Tax Calendar grid below — so marking
+        // one "Filed" there is reflected here, and vice versa, instead of
+        // the calculation table silently guessing its own status.
+        $arEntry = $this->syncTaxCalendarEntry("Output VAT (Sales) {$year}", $arDeadline, $outputVat);
+        $apEntry = $this->syncTaxCalendarEntry("Input VAT (Purchases) {$year}", $apDeadline, $inputVat);
+        $netEntry = $this->syncTaxCalendarEntry("Net VAT Payable {$year}", $netDeadline, max($netVat, 0));
+
+        $arDeadlineLabel = $arDeadline ? $arDeadline->format('M j, Y') : 'N/A';
+        $apDeadlineLabel = $apDeadline ? $apDeadline->format('M j, Y') : 'N/A';
+        $netDeadlineLabel = $netDeadline ? $netDeadline->format('M j, Y') : 'N/A';
+
+        $arStatus = $arEntry ? $this->calendarStatusToTaxStatus($arEntry->status) : 'Pending';
+        $apStatus = $apEntry ? $this->calendarStatusToTaxStatus($apEntry->status) : 'Pending';
+        $netStatus = $netEntry ? $this->calendarStatusToTaxStatus($netEntry->status) : 'Pending';
 
         return [
-            'totalDue' => round((float) $filings->sum('amount_due'), 2),
-            'filedYtd' => round((float) $filings->where('status', 'Filed')->sum('amount_due'), 2),
-            'pendingFilings' => $filings->whereIn('status', ['Pending', 'Calculated'])->count(),
+            [
+                'type' => 'Output VAT (Sales)',
+                'rate' => '12%',
+                'taxableAmount' => round($salesSubtotal, 2),
+                'amountDue' => round($outputVat, 2),
+                'deadline' => $arDeadlineLabel,
+                'status' => $arStatus,
+            ],
+            [
+                'type' => 'Input VAT (Purchases)',
+                'rate' => '12%',
+                'taxableAmount' => round($purchasesSubtotal, 2),
+                'amountDue' => round($inputVat, 2),
+                'deadline' => $apDeadlineLabel,
+                'status' => $apStatus,
+            ],
+            [
+                'type' => 'Net VAT Payable',
+                'rate' => '12%',
+                'taxableAmount' => round($salesSubtotal - $purchasesSubtotal, 2),
+                'amountDue' => round(max($netVat, 0), 2),
+                'deadline' => $netDeadlineLabel,
+                'status' => $netVat <= 0 ? 'No Payment Due' : $netStatus,
+            ],
+        ];
+    }
+
+    /**
+     * Upsert one computed VAT obligation (Output/Input/Net) into
+     * fin_tax_calendar, keyed by its label, so the Tax Calculation table
+     * and the editable Tax Calendar grid always describe the same
+     * filing. Amount/due_date are refreshed from AR/AP every call;
+     * status is only initialized on first creation (or auto-flipped to
+     * Overdue once the deadline passes) and otherwise left alone so a
+     * user's manual "Filed" mark isn't overwritten.
+     */
+    protected function syncTaxCalendarEntry(string $label, ?Carbon $deadline, float $amount): ?FinTaxCalendar
+    {
+        if (! $deadline) {
+            return null;
+        }
+
+        $entry = FinTaxCalendar::firstOrNew(['label' => $label]);
+        $entry->due_date = $deadline->format('Y-m-d');
+        $entry->amount = round($amount, 2);
+
+        if (! $entry->exists) {
+            $entry->status = $deadline->isPast() ? 'Overdue' : 'Upcoming';
+        } elseif ($entry->status === 'Upcoming' && $deadline->isPast()) {
+            $entry->status = 'Overdue';
+        }
+
+        $entry->save();
+
+        return $entry;
+    }
+
+    /**
+     * Maps fin_tax_calendar's status vocabulary (Upcoming/Filed/Overdue)
+     * to the Tax Calculation table's vocabulary (Calculated/Pending/Filed)
+     * so $statusColor() in the blade colors it correctly.
+     */
+    protected function calendarStatusToTaxStatus(string $calendarStatus): string
+    {
+        return match ($calendarStatus) {
+            'Filed' => 'Filed',
+            'Overdue' => 'Pending',
+            default => 'Calculated', // Upcoming
+        };
+    }
+
+    /**
+     * Tax summary cards on the Cash Flow & Tax page. "Total Due" is now
+     * the real net VAT payable (output VAT from AR minus input VAT from
+     * AP). "Filed YTD" / "Pending Filings" read fin_tax_calendar, which
+     * now includes the synced Output/Input/Net VAT entries alongside
+     * any manually-added filings, so both stay in agreement.
+     */
+    public function taxSummary(int $year): array
+    {
+        $outputVat = (float) ArInvoice::whereYear('invoice_date', $year)->sum('tax');
+        $inputVat = (float) ApInvoice::whereYear('invoice_date', $year)->sum('tax');
+        $netVatPayable = max($outputVat - $inputVat, 0);
+
+        $filedYtd = DB::table('fin_tax_calendar')
+            ->whereYear('due_date', $year)
+            ->where('status', 'Filed')
+            ->sum('amount');
+
+        $pendingFilings = DB::table('fin_tax_calendar')
+            ->whereYear('due_date', $year)
+            ->where('status', '!=', 'Filed')
+            ->count();
+
+        return [
+            'totalDue' => round($netVatPayable, 2),
+            'filedYtd' => round((float) $filedYtd, 2),
+            'pendingFilings' => $pendingFilings,
         ];
     }
 

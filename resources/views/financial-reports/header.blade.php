@@ -18,9 +18,7 @@
     </button>
 </div>
 
-{{-- Stat cards — all values come from FinancialReportService::headerStats(),
-     which derives them from gl_entries/gl_entry_lines, fin_audits and
-     fin_tax_filings. Nothing here is hardcoded. --}}
+{{-- Stat cards --}}
 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-6 bg-white rounded-2xl shadow-card p-6">
     @php
 
@@ -128,7 +126,7 @@
     @endforeach
 </div>
 
-{{-- Tabs — real navigation between the report pages --}}
+{{-- Tabs --}}
 <div class="flex flex-wrap gap-3 mb-6 no-print">
     @php
         $tabs = [
@@ -145,8 +143,7 @@
         @endphp
         @if ($tabRouteExists)
             <a href="{{ route($tab['route']) }}"
-                class="rounded-xl px-5 py-2.5 text-sm font-semibold border transition
-                                                                                        {{ $isActive ? 'bg-navy text-white border-navy shadow-card' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50' }}">
+                class="rounded-xl px-5 py-2.5 text-sm font-semibold border transition {{ $isActive ? 'bg-navy text-white border-navy shadow-card' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50' }}">
                 {{ $tab['label'] }}
             </a>
         @else
@@ -160,11 +157,36 @@
 
 @push('scripts')
     <script>
-      
+        // Store permission based on the active role session natively available in blade
+        window.canManageFinancialReports = @json(\App\Models\Role::activeRoleCanManageFinancialReports());
+
         window.AppUI = window.AppUI || {};
+
+        // Helper check function that triggers the pop-up warning
+        AppUI.requirePermission = function() {
+            if (!window.canManageFinancialReports) {
+                AppUI.openModal(`
+                    <div class="text-center py-4">
+                        <div class="w-12 h-12 rounded-full bg-red-100 text-brand-red mx-auto flex items-center justify-center mb-3">
+                            <i data-lucide="shield-alert" class="w-6 h-6"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-navy mb-2">Access Denied</h3>
+                        <p class="text-sm text-slate-500 mb-5">You don't have permission for this action.</p>
+                        <div class="flex justify-center">
+                            <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-6 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700">Understood</button>
+                        </div>
+                    </div>
+                `, 'sm');
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+                return false;
+            }
+            return true;
+        };
 
         Object.assign(AppUI, (function () {
             function openGenerateReportModal() {
+                if (!AppUI.requirePermission()) return;
+                
                 const reportSections = [
                     ['cover', 'Cover Page & Summary'],
                     ['statements', 'Financial Statements'],
@@ -364,6 +386,8 @@
             }
 
             function openExportPdfModal() {
+                if (!AppUI.requirePermission()) return;
+                
                 AppUI.openModal(`
         <h3 class="text-lg font-bold text-navy mb-1">Export as PDF</h3>
         <p class="text-sm text-slate-500 mb-5">
@@ -455,6 +479,8 @@
             }
 
             function openExportExcelModal() {
+                if (!AppUI.requirePermission()) return;
+                
                 let tables = document.querySelectorAll('.js-exportable-table');
 
                 if (tables.length === 0) {
@@ -611,6 +637,8 @@
             }
 
             function openAddAuditModal() {
+                if (!AppUI.requirePermission()) return;
+                
                 AppUI.openModal(`
         <h3 class="text-lg font-bold text-navy mb-1">Add Audit</h3>
         <p class="text-sm text-slate-500 mb-5">Schedule a new compliance audit and its follow-up checklist.</p>
@@ -725,7 +753,7 @@
           `;
                     checklistRows.appendChild(row);
                     wireRemoveButton(row);
-                    lucide.createIcons();
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
                 });
 
                 document.getElementById('add-audit-form').addEventListener('submit', function (e) {
@@ -787,11 +815,6 @@
                             AppUI.closeModal();
                             AppUI.showToast(`Audit "${audit.auditType}" scheduled for ${audit.date}${payload.recurrence !== 'none' ? ` (${payload.recurrence})` : ''}.`, 'success');
 
-                            // Push the new row into the Overview page's live
-                            // AUDITS state (Audit History table + compliance
-                            // donut) so it shows up without a reload. This hook
-                            // only exists on the Overview page, hence the
-                            // optional-chaining fallback for the other tabs.
                             AppUI.onAuditCreated?.(audit);
                         })
                         .catch((err) => {

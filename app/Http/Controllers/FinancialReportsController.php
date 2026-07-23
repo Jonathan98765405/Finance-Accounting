@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\FinAudit;
 use App\Models\FinTaxCalendar;
+use App\Models\Role;
 use App\Services\FinancialReportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -122,30 +123,14 @@ class FinancialReportsController extends Controller
     }
 
     /**
-     * Display the Budget vs Actual page.
-     */
-    public function budgetActual(Request $request)
-    {
-        $years = $this->reports->availableYears();
-        $year = (int) $request->query('year', $years[0] ?? now()->year);
-
-        return view('financial-reports.budget-actual', [
-            'years' => $years,
-            'selectedYear' => $year,
-            'headerStats' => $this->reports->headerStats($year),
-        ]);
-    }
-
-    /**
      * Store a new audit scheduled from the header's "Add Audit" modal.
-     *
-     * Returns the audit in the SAME shape as FinancialReportService::audits(),
-     * so the front end (overview.blade.php) can push it straight into its
-     * in-memory AUDITS / AUDITS_CACHE arrays without a page reload or a
-     * second round-trip to the server.
      */
     public function storeAudit(Request $request)
     {
+        if (!Role::activeRoleCanManageFinancialReports()) {
+            return response()->json(['message' => 'Access Denied: You don\'t have permission for this action.'], 403);
+        }
+
         $validated = $request->validate([
             'name'        => ['required', 'string', 'max:255'],
             'type'        => ['required', 'in:Internal,External,Regulatory,Financial'],
@@ -192,12 +177,14 @@ class FinancialReportsController extends Controller
     }
 
     /**
-     * Update an existing audit from the Overview page's "Edit Information"
-     * modal. Returns the audit in the same shape as storeAudit()/audits()
-     * so the front end can merge it straight into AUDITS / AUDITS_CACHE.
+     * Update an existing audit from the Overview page's "Edit Information" modal.
      */
     public function updateAudit(Request $request, FinAudit $audit)
     {
+        if (!Role::activeRoleCanManageFinancialReports()) {
+            return response()->json(['message' => 'Access Denied: You don\'t have permission for this action.'], 403);
+        }
+
         $validated = $request->validate([
             'auditType'     => ['required', 'in:Internal,External,Regulatory,Financial'],
             'auditor'       => ['required', 'string', 'max:255'],
@@ -236,6 +223,10 @@ class FinancialReportsController extends Controller
      */
     public function destroyAudit(FinAudit $audit)
     {
+        if (!Role::activeRoleCanManageFinancialReports()) {
+            return response()->json(['message' => 'Access Denied: You don\'t have permission for this action.'], 403);
+        }
+
         $id = $audit->id;
         $year = $audit->audit_year;
         $audit->delete();
@@ -244,13 +235,14 @@ class FinancialReportsController extends Controller
     }
 
     /**
-     * Store a new tax calendar filing from the Cash Flow & Tax page's
-     * "Add Filing" modal. Returns the item in the same shape the front
-     * end already expects ({id, label, amount, date, status}) so it can
-     * be pushed straight into TAX_CALENDAR_ITEMS.
+     * Store a new tax calendar filing from the Cash Flow & Tax page's "Add Filing" modal.
      */
     public function storeTaxCalendarItem(Request $request)
     {
+        if (!Role::activeRoleCanManageFinancialReports()) {
+            return response()->json(['message' => 'Access Denied: You don\'t have permission for this action.'], 403);
+        }
+
         $validated = $request->validate([
             'label'  => ['required', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'min:0'],
@@ -273,6 +265,10 @@ class FinancialReportsController extends Controller
      */
     public function updateTaxCalendarItem(Request $request, FinTaxCalendar $taxCalendar)
     {
+        if (!Role::activeRoleCanManageFinancialReports()) {
+            return response()->json(['message' => 'Access Denied: You don\'t have permission for this action.'], 403);
+        }
+
         $validated = $request->validate([
             'label'  => ['required', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'min:0'],
@@ -295,6 +291,10 @@ class FinancialReportsController extends Controller
      */
     public function destroyTaxCalendarItem(FinTaxCalendar $taxCalendar)
     {
+        if (!Role::activeRoleCanManageFinancialReports()) {
+            return response()->json(['message' => 'Access Denied: You don\'t have permission for this action.'], 403);
+        }
+
         $id = $taxCalendar->id;
         $taxCalendar->delete();
 
@@ -302,8 +302,7 @@ class FinancialReportsController extends Controller
     }
 
     /**
-     * Shape a FinTaxCalendar row the way the Cash Flow & Tax page's JS
-     * (TAX_CALENDAR_ITEMS) expects it.
+     * Shape a FinTaxCalendar row.
      */
     protected function formatTaxCalendarItem(FinTaxCalendar $item): array
     {

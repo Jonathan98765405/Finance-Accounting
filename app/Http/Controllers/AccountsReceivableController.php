@@ -725,7 +725,7 @@ return view('accounts-receivable.aging', compact(
             $days61_90 +
             $over90;
 
-        $pdf = Pdf::loadView('accounts-receivable.gingpdf', compact(
+        $pdf = Pdf::loadView('accounts-receivable.agingpdf', compact(
             'receivables',
             'totalOutstanding',
             'current',
