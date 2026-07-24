@@ -54,46 +54,34 @@ class FixedAssetController extends Controller
     return view('fixed-assets.index', compact('stats', 'assets'));
 }
     public function create()
-{
-    $categories = AssetCategory::all();
+    {
+        $categories = AssetCategory::all();
 
-    $year = date('Y');
-    $lastAsset = FixedAsset::where('asset_tag', 'like', "FA-{$year}-%")
-        ->orderByDesc('asset_id')
-        ->first();
-    $lastNumber = $lastAsset ? (int) substr($lastAsset->asset_tag, -3) : 0;
-    $tag = 'FA-' . $year . '-' . str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+        $nextNumber = FixedAsset::count() + 1;
+        $tag = 'FA-' . date('Y') . '-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
 
-    return view('fixed-assets.register', compact('categories', 'tag'));
-}
+        return view('fixed-assets.register', compact('categories', 'tag'));
+    }
 
     public function store(Request $request)
-{
-    $validated = $request->validate([
-        'asset_name' => 'required|string|max:150',
-        'category_id' => 'required|exists:fa_asset_categories,category_id',
-        'acquisition_date' => 'required|date',
-        'acquisition_cost' => 'required|numeric|min:0',
-        'location' => 'nullable|string|max:100',
-        'status' => 'nullable|in:active,disposed,under_maintenance,fully_depreciated',
-        'serial_number' => 'nullable|string|max:100',
-        'warranty_years' => 'nullable|integer|min:0',
-        'description' => 'nullable|string',
-        'condition' => 'nullable|in:New,Good,Fair,Poor',
-    ]);
+    {
+        $validated = $request->validate([
+            'asset_name' => 'required|string|max:150',
+            'category_id' => 'required|exists:fa_asset_categories,category_id',
+            'acquisition_date' => 'required|date',
+            'acquisition_cost' => 'required|numeric|min:0',
+            'location' => 'nullable|string|max:100',
+            'status' => 'nullable|in:active,disposed,under_maintenance,fully_depreciated',
+            'serial_number' => 'nullable|string|max:100',
+            'warranty_years' => 'nullable|integer|min:0',
+            'description' => 'nullable|string',
+            'condition' => 'nullable|in:New,Good,Fair,Poor',
+        ]);
 
-    $asset = \DB::transaction(function () use ($validated) {
-        $year = date('Y');
+        $nextNumber = FixedAsset::count() + 1;
+        $tag = 'FA-' . date('Y') . '-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
 
-        $lastAsset = FixedAsset::where('asset_tag', 'like', "FA-{$year}-%")
-            ->lockForUpdate()
-            ->orderByDesc('asset_id')
-            ->first();
-
-        $lastNumber = $lastAsset ? (int) substr($lastAsset->asset_tag, -3) : 0;
-        $tag = 'FA-' . $year . '-' . str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
-
-        return FixedAsset::create([
+        $asset = FixedAsset::create([
             'asset_tag' => $tag,
             'asset_name' => $validated['asset_name'],
             'category_id' => $validated['category_id'],
@@ -111,12 +99,13 @@ class FixedAssetController extends Controller
             'description' => $validated['description'] ?? null,
             'condition' => $validated['condition'] ?? 'Good',
         ]);
-    });
 
-    $this->gl->postAssetAcquisition($asset);
+        // Auto-post the acquisition to the General Ledger
+        $this->gl->postAssetAcquisition($asset);
 
-    return redirect('/fixed-assets')->with('success', 'Asset successfully registered!');
-}
+        return redirect('/fixed-assets')->with('success', 'Asset successfully registered!');
+    }
+
     public function assignment($id = null)
     {
         if ($id) {
