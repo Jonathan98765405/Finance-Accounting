@@ -1,5 +1,7 @@
 <?php
 
+
+use App\Http\Controllers\Api\V1\AccountsPayable\AccountsPayableApiController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GeneralLedgerController;
 use App\Http\Controllers\AccountsPayableController;
@@ -200,6 +202,24 @@ Route::get('/account-payable/payment-processing/{payment}/remittance', [Accounts
 
 Route::post('/account-payable/payment-processing/{payment}/email-remittance', [AccountsPayableController::class, 'emailRemittance'])
     ->name('ap.payment.remittance.email');
+
+
+
+    /*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('v1/ap')->group(function () {
+    Route::get('/suppliers', [AccountsPayableApiController::class, 'suppliers']);
+    Route::get('/purchase-orders', [AccountsPayableApiController::class, 'purchaseOrders']);
+    Route::get('/invoices', [AccountsPayableApiController::class, 'invoices']);
+    Route::get('/payments', [AccountsPayableApiController::class, 'payments']);
+    Route::get('/dashboard', [AccountsPayableApiController::class, 'dashboard']);
+});
+
+
 
 /*
 |--------------------------------------------------------------------------

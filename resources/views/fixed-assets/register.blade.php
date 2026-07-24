@@ -3,17 +3,17 @@
 @section('title', 'Asset Registration')
 @section('active', 'Fixed Assets')
 
-@section('page-title','Fixed Assets')
-@section('page-title-heading','Fixed Assets')
-@section('page-subtitle','Manage company fixed assets.')
+
+@section('page-title-heading','Asset Registration')
+@section('page-subtitle','Register a new fixed asset')
 
 @section('content')
 
     {{-- Header --}}
     <div class="flex items-start justify-between">
         <div>
-            <h1 class="text-3xl font-bold" style="color:#173A66;">Fixed Assets</h1>
-            <p class="text-gray-500 mt-1">Manage, track, and maintain all company assets.</p>
+            <h1 class="text-3xl font-bold" style="color:#173A66;"></h1>
+            <p class="text-gray-500 mt-1"></p>
         </div>
         <div class="flex flex-col items-end gap-3">
             <a href="{{ url('/fixed-assets') }}"
@@ -34,7 +34,7 @@
 
     {{-- Sub-header --}}
     <div>
-        <h2 class="text-lg font-bold" style="color:#173A66;">Asset Registration</h2>
+        <h2 class="text-lg font-bold" style="color:#173A66;">Registration</h2>
         <p class="text-gray-500 text-sm mt-0.5">Register a new fixed asset or update and existing asset record</p>
     </div>
 
@@ -70,7 +70,7 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Asset ID</label>
-                        <input type="text" value="{{ $nextTag }}" disabled
+                        <input type="text" value="{{ $tag }}" disabled
                                class="w-full px-3 py-2 rounded-md border border-gray-200 bg-gray-100 text-sm text-gray-500">
                     </div>
                     <div>
@@ -208,7 +208,7 @@
 
                 @php
                     $preview = [
-                        ['label' => 'Asset ID', 'value' => $nextTag],
+                        ['label' => 'Asset ID', 'value' => $tag],
                         ['label' => 'Asset Name', 'value' => 'Fill out the form'],
                         ['label' => 'Category', 'value' => '-'],
                         ['label' => 'Status', 'value' => 'Active', 'badge' => true],

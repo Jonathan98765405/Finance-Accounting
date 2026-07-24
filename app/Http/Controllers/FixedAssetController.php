@@ -57,11 +57,9 @@ class FixedAssetController extends Controller
     {
         $categories = AssetCategory::all();
 
-        $lastAsset = FixedAsset::orderBy('id', 'desc')->first();
-        $nextNumber = $lastAsset ? $lastAsset->id + 1 : 1;
-
+        $nextNumber = FixedAsset::count() + 1;
         $tag = 'FA-' . date('Y') . '-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
-        
+
         return view('fixed-assets.register', compact('categories', 'tag'));
     }
 
