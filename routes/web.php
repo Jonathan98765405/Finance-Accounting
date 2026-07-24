@@ -289,6 +289,8 @@ Route::get('/accounts-receivable/aging/export/pdf', [AccountsReceivableControlle
 
 Route::post('/accounts-receivable/reminder', [AccountsReceivableController::class, 'storeReminder'])
     ->name('receivable.reminder.store');
+
+Route::get('/accounts-receivable/reminder/history', [AccountsReceivableController::class, 'reminderHistory']);
  
 // Reports - Generate + Export
 Route::get('/accounts-receivable/report', [AccountsReceivableController::class, 'generateReport'])

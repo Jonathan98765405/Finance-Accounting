@@ -762,6 +762,24 @@ return view('accounts-receivable.aging', compact(
     ]);
 }
 
+public function reminderHistory()
+{
+    $history = Reminder::join('ar_customers', 'ar_customers.id', '=', 'ar_reminders.customer_id')
+        ->join('ar_invoices', 'ar_invoices.id', '=', 'ar_reminders.invoice_id')
+        ->select(
+            'ar_customers.customer_name',
+            'ar_invoices.invoice_number',
+            'ar_invoices.balance as amount',
+            'ar_reminders.message',
+            'ar_reminders.status',
+            'ar_reminders.created_at as sent_at',
+            DB::raw("'email' as channel")
+        )
+        ->orderByDesc('ar_reminders.created_at')
+        ->get();
+
+    return response()->json($history);
+}
 
     /**
      * Generate a filtered Accounts Receivable report.

@@ -30,7 +30,7 @@
 <!-- Financial Indicator Summary Cards -->
 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
     <!-- Total Receivable -->
-    <div class="bg-blue-50 border border-slate-200 shadow-card p-6 flex items-center justify-between">
+    <div class="bg-blue-50 border border-slate-200 rounded-xl shadow-card p-6 flex items-center justify-between">
         <div>
             <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Receivable</p>
             <h2 class="text-2xl font-extrabold text-navy mt-2" id="cardTotalReceivable">₱0.00</h2>
@@ -41,7 +41,7 @@
     </div>
 
     <!-- Paid Invoices -->
-    <div class="bg-emerald-50 border border-slate-200 shadow-card p-6 flex items-center justify-between">
+    <div class="bg-emerald-50 border border-slate-200 rounded-xl shadow-card p-6 flex items-center justify-between">
         <div>
             <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Paid Invoices</p>
             <h2 class="text-2xl font-extrabold text-brand-green mt-2" id="cardTotalPaid">₱0.00</h2>
@@ -52,7 +52,7 @@
     </div>
 
     <!-- Unpaid Invoices -->
-    <div class="bg-orange-50 border border-slate-200 shadow-card p-6 flex items-center justify-between">
+    <div class="bg-orange-50 border border-slate-200 rounded-xl shadow-card p-6 flex items-center justify-between">
         <div>
             <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Unpaid Invoices</p>
             <h2 class="text-2xl font-extrabold text-brand-orange mt-2" id="cardTotalUnpaid">₱0.00</h2>
@@ -63,7 +63,7 @@
     </div>
 
     <!-- Overdue Invoices -->
-    <div class="bg-red-50 border border-slate-200 shadow-card p-6 flex items-center justify-between">
+    <div class="bg-red-50 border border-slate-200 rounded-xl shadow-card p-6 flex items-center justify-between">
         <div>
             <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Overdue Invoices</p>
             <h2 class="text-2xl font-extrabold text-brand-red mt-2" id="cardTotalOverdue">₱0.00</h2>
@@ -448,88 +448,351 @@ document.addEventListener('click', (e) => {
 
 // ================= ACTION MODALS =================
 function openReminderModal() {
-    const customerOpts = customers.map(c => `<option value="${c.id}">${c.customer_name}</option>`).join('');
-    const invoiceOpts = invoicesData.map(i => `<option value="${i.id}">${i.invoice_number} - (${formatCurrency(i.balance)})</option>`).join('');
+    const customerOpts = customers.map(c =>
+        `<option value="${c.id}">${c.customer_name}</option>`
+    ).join('');
+
+    const invoiceOpts = invoicesData.map(i =>
+        `<option value="${i.id}">${i.invoice_number} - (${formatCurrency(i.balance)})</option>`
+    ).join('');
 
     AppUI.openModal(`
         <h3 class="text-xl font-bold text-navy mb-1">Send Automated Reminder</h3>
         <p class="text-sm text-slate-400 mb-5">Accounts Receivable > Notifications Center</p>
+
         <form id="reminderSubmitForm" class="space-y-4">
+
             <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Select Customer</label>
-                <select id="reminderCustomerSelect" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-navy" required>${customerOpts}</select>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Select Customer
+                </label>
+
+                <select
+                    id="reminderCustomerSelect"
+                    class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-navy"
+                    required>
+                    ${customerOpts}
+                </select>
             </div>
+
             <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Select Pending Invoice</label>
-                <select id="reminderInvoiceSelect" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-navy" required>${invoiceOpts}</select>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Select Pending Invoice
+                </label>
+
+                <select
+                    id="reminderInvoiceSelect"
+                    class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-navy"
+                    required>
+                    ${invoiceOpts}
+                </select>
             </div>
+
             <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Custom Broadcast Message</label>
-                <textarea id="reminderMessageText" rows="4" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-navy resize-none" required>Dear Customer,\n\nThis is a friendly statement alert confirming that your outstanding portfolio invoices have reached maturation maturity parameters. Kindly arrange settlement processing coordinates.\n\nThank you.</textarea>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Custom Broadcast Message
+                </label>
+
+                <textarea
+                    id="reminderMessageText"
+                    rows="4"
+                    class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-navy resize-none"
+                    required>Dear Customer,
+
+This is a friendly reminder that your invoice is now due. Kindly settle your outstanding balance at your earliest convenience.
+
+Thank you.</textarea>
             </div>
-            <div class="flex justify-end gap-3 pt-2">
-                <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50">Cancel</button>
-                <button type="submit" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy/95 shadow-sm">Dispatch Transmission</button>
+
+            <div class="flex justify-between pt-2">
+
+                <button
+                    type="button"
+                    onclick="openReminderHistoryModal()"
+                    class="rounded-xl px-5 py-2.5 text-sm font-semibold border border-slate-200 hover:bg-slate-50">
+                    Reminder History
+                </button>
+
+                <div class="flex gap-3">
+
+                    <button
+                        type="button"
+                        onclick="AppUI.closeModal()"
+                        class="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50">
+                        Cancel
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy/95 shadow-sm">
+                        Dispatch Transmission
+                    </button>
+
+                </div>
+
             </div>
+
         </form>
     `, 'md');
 
-    document.getElementById('reminderSubmitForm').addEventListener('submit', function(e) {
+    document.getElementById('reminderSubmitForm').addEventListener('submit', function (e) {
+
         e.preventDefault();
 
         const customerId = document.getElementById('reminderCustomerSelect').value;
         const invoiceId = document.getElementById('reminderInvoiceSelect').value;
         const message = document.getElementById('reminderMessageText').value;
 
-        const customer = customers.find(c => String(c.id) === String(customerId));
-        const invoice = invoicesData.find(i => String(i.id) === String(invoiceId));
+        fetch('/accounts-receivable/reminder', {
 
-    fetch('/accounts-receivable/reminder', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-    },
-    body: JSON.stringify({
-        customer_id: customerId,
-        invoice_id: invoiceId,
-        message: message
-    })
-})
-.then(async response => {
-    const text = await response.text();
+            method: 'POST',
 
-    console.log('STATUS:', response.status);
-    console.log('BODY:', text);
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
 
-    return JSON.parse(text);
-})
-.then(data => {
+            body: JSON.stringify({
 
-    if(data.success){
+                customer_id: customerId,
+                invoice_id: invoiceId,
+                message: message
 
-        AppUI.closeModal();
+            })
 
-        AppUI.showToast(
-            'Billing compliance reminder successfully sent.',
-            'success'
-        );
+        })
+        .then(response => response.json())
+        .then(data => {
+
+            if (data.success) {
+
+                AppUI.closeModal();
+
+                AppUI.showToast(
+                    'Billing compliance reminder successfully sent.',
+                    'success'
+                );
+
+            } else {
+
+                AppUI.showToast(
+                    'Failed to send reminder.',
+                    'error'
+                );
+
+            }
+
+        })
+        .catch(error => {
+
+            console.error(error);
+
+            AppUI.showToast(
+                'Failed to send reminder.',
+                'error'
+            );
+
+        });
+
+    });
+
+}
+
+async function openReminderHistoryModal() {
+
+    try {
+
+        const response = await fetch('/accounts-receivable/reminder/history', {
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+
+        window.reminderHistory = await response.json();
+
+    } catch (error) {
+
+        console.error(error);
+
+        AppUI.showToast('Failed to load reminder history.', 'error');
+        return;
 
     }
 
-})
-.catch(error => {
-    console.error(error);
+    const rows = window.reminderHistory.length
+        ? window.reminderHistory
+            .sort((a, b) => new Date(b.sent_at) - new Date(a.sent_at))
+            .map((r, index) => `
+                <tr
+                    onclick="toggleReminderDetails(${index})"
+                    class="cursor-pointer hover:bg-slate-50 border-b border-slate-200">
 
-    AppUI.showToast(
-        'Failed to send reminder.',
-        'error'
-    );
-});
-       
-    });
+                    <td class="px-4 py-3">
+                        <div class="flex items-center gap-2">
+                            <i id="icon-${index}" class="fa-solid fa-chevron-right text-xs text-slate-500 transition-transform duration-200"></i>
+                            <span class="font-medium">${r.customer_name}</span>
+                        </div>
+                    </td>
+
+                    <td class="px-4 py-3">
+                        ${r.invoice_number}
+                    </td>
+
+                    <td class="px-4 py-3">
+                        ${new Date(r.sent_at).toLocaleDateString()}
+                    </td>
+
+                    <td class="px-4 py-3">
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold
+                            ${r.status === 'Sent'
+                                ? 'bg-emerald-50 text-emerald-600'
+                                : 'bg-amber-50 text-amber-600'}">
+                            ${r.status}
+                        </span>
+                    </td>
+
+                </tr>
+
+                <tr id="details-${index}" class="hidden bg-slate-50">
+
+                    <td colspan="4" class="px-8 py-5">
+
+                        <div class="grid grid-cols-2 gap-6">
+
+                            <div>
+                                <p class="text-xs uppercase text-slate-400 mb-1">
+                                    Amount
+                                </p>
+
+                                <p class="font-semibold text-slate-700">
+                                    ${formatCurrency(r.amount)}
+                                </p>
+                            </div>
+
+                            <div>
+                                <p class="text-xs uppercase text-slate-400 mb-1">
+                                    Channel
+                                </p>
+
+                                <p class="font-semibold text-slate-700">
+                                    ${r.channel}
+                                </p>
+                            </div>
+
+                            <div>
+                                <p class="text-xs uppercase text-slate-400 mb-1">
+                                    Sent At
+                                </p>
+
+                                <p class="text-slate-700">
+                                    ${new Date(r.sent_at).toLocaleString()}
+                                </p>
+                            </div>
+
+                            <div>
+                                <p class="text-xs uppercase text-slate-400 mb-1">
+                                    Status
+                                </p>
+
+                                <p class="font-semibold text-emerald-600">
+                                    ${r.status}
+                                </p>
+                            </div>
+
+                        </div>
+
+                        <div class="mt-5">
+
+                            <p class="text-xs uppercase text-slate-400 mb-2">
+                                Message
+                            </p>
+
+                            <div class="rounded-lg border border-slate-200 bg-white p-4 text-sm whitespace-pre-line text-slate-700">
+                                ${r.message}
+                            </div>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+            `).join('')
+
+        : `
+            <tr>
+                <td colspan="4" class="py-10 text-center text-slate-400">
+                    No reminders sent yet.
+                </td>
+            </tr>
+        `;
+
+    AppUI.openModal(`
+
+        <h3 class="text-xl font-bold text-navy mb-1">
+            Reminder History
+        </h3>
+
+        <p class="text-sm text-slate-400 mb-5">
+            Accounts Receivable > Notifications Center
+        </p>
+
+        <div class="max-h-[500px] overflow-y-auto overflow-x-auto border border-slate-200 rounded-xl">
+
+    <table class="w-full text-left">
+
+        <thead class="sticky top-0 bg-slate-50 z-10">
+
+            <tr class="border-b border-slate-200">
+
+                <th class="px-4 py-3 text-xs uppercase font-bold">
+                    Customer
+                </th>
+
+                <th class="px-4 py-3 text-xs uppercase font-bold">
+                    Invoice
+                </th>
+
+                <th class="px-4 py-3 text-xs uppercase font-bold">
+                    Date
+                </th>
+
+                <th class="px-4 py-3 text-xs uppercase font-bold">
+                    Status
+                </th>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            ${rows}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+        <div class="flex justify-end pt-4">
+
+            <button
+                onclick="AppUI.closeModal()"
+                class="rounded-xl px-5 py-2.5 border border-slate-200 hover:bg-slate-50">
+
+                Close
+
+            </button>
+
+        </div>
+
+    `, 'lg');
+
 }
+
+
 
 
 function openReportModal() {
@@ -812,5 +1075,17 @@ function openAllPaymentsModal() {
 document.addEventListener('DOMContentLoaded', function () {
     renderDashboard();
 });
+
+
+function toggleReminderDetails(index) {
+
+    const details = document.getElementById(`details-${index}`);
+    const icon = document.getElementById(`icon-${index}`);
+
+    details.classList.toggle("hidden");
+
+    icon.classList.toggle("rotate-90");
+
+}
 </script>
 @endpush
