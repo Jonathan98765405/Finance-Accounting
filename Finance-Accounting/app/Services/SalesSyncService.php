@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AccountReceivable\Customer;
 use App\Models\AccountReceivable\Invoice;
+use App\Models\AccountReceivable\InvoiceItem;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
@@ -73,8 +74,8 @@ class SalesSyncService
     }
 
     /**
-     * Pull invoices from the Sales API and upsert them locally.
-     * Assumes customers have already been synced.
+     * Pull invoices (with their line items) from the Sales API and
+     * upsert them locally. Assumes customers have already been synced.
      */
     public function syncInvoices(): int
     {
@@ -109,6 +110,26 @@ class SalesSyncService
                 continue;
             }
 
+            // If this invoice already has a payment applied on the Finance
+            // side (Paid or Partial), don't let an incoming sync overwrite
+            // that with possibly-stale data from the Sales API. Finance
+            // status wins once a payment has been recorded.
+            $existingInvoice = Invoice::where('sales_invoice_id', $invoice['id'])->first();
+
+            if ($existingInvoice && in_array($existingInvoice->status, ['Paid', 'Partial'])) {
+
+                if (($invoice['payment_status'] ?? null) !== $existingInvoice->status) {
+                    Log::warning('Sales sync: skipped invoice with divergent payment status', [
+                        'sales_invoice_id' => $invoice['id'],
+                        'local_status' => $existingInvoice->status,
+                        'incoming_sales_status' => $invoice['payment_status'] ?? null,
+                    ]);
+                }
+
+                $count++;
+                continue;
+            }
+
             $totalAmount = (float) $invoice['total_amount'];
             $isPaid = ($invoice['payment_status'] ?? null) === 'Paid';
             $balance = $isPaid ? 0 : $totalAmount;
@@ -116,7 +137,7 @@ class SalesSyncService
             $invoiceDate = $invoice['invoice_date'] ?? now();
             $dueDate = $invoice['due_date'] ?? $invoiceDate;
 
-            Invoice::updateOrCreate(
+            $localInvoice = Invoice::updateOrCreate(
                 ['sales_invoice_id' => $invoice['id']],
                 [
                     'invoice_number' => $invoice['invoice_no'],
@@ -133,9 +154,57 @@ class SalesSyncService
                 ]
             );
 
+            // Sync line items (replace-all approach: clear then re-insert,
+            // simplest way to stay consistent with the Sales side on every sync).
+            if (! empty($invoice['items'])) {
+                $localInvoice->items()->delete();
+
+                foreach ($invoice['items'] as $item) {
+                    InvoiceItem::create([
+                        'invoice_id' => $localInvoice->id,
+                        'description' => $item['description'],
+                        'quantity' => $item['qty'],
+                        'unit_price' => $item['unit_price'],
+                        'amount' => $item['amount'],
+                    ]);
+                }
+            }
+
             $count++;
         }
 
         return $count;
+    }
+
+    /**
+     * Tell the Sales system that an invoice has been fully paid on the
+     * Finance side, so its status stays in sync.
+     */
+    public function markInvoicePaid(int $salesInvoiceId): bool
+    {
+        try {
+            $response = Http::withToken($this->token)
+                ->patch("{$this->baseUrl}/sales-invoices/{$salesInvoiceId}/mark-paid");
+
+            if (! $response->successful()) {
+                Log::error('Sales sync: failed to mark invoice as paid on Sales side', [
+                    'sales_invoice_id' => $salesInvoiceId,
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
+                return false;
+            }
+
+            return true;
+
+        } catch (\Throwable $e) {
+            Log::error('Sales sync: exception while marking invoice as paid', [
+                'sales_invoice_id' => $salesInvoiceId,
+                'message' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 }

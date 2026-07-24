@@ -13,14 +13,17 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Services\GeneralLedgerService;
+use App\Services\SalesSyncService;
 
 class AccountsReceivableController extends Controller
 {
     protected GeneralLedgerService $ledger;
+    protected SalesSyncService $salesSync;
 
-    public function __construct(GeneralLedgerService $ledger)
+    public function __construct(GeneralLedgerService $ledger, SalesSyncService $salesSync)
     {
         $this->ledger = $ledger;
+        $this->salesSync = $salesSync;
     }
 
     /**
@@ -486,6 +489,12 @@ foreach ($request->invoice_id as $invoiceId) {
             'balance' => 0,
             'status' => 'Paid'
         ]);
+
+        // If this invoice originated from the Sales system, push the
+        // paid status back so both systems stay in sync.
+        if ($invoice->sales_invoice_id) {
+            $this->salesSync->markInvoicePaid($invoice->sales_invoice_id);
+        }
 
     } else {
 
