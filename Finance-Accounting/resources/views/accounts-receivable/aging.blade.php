@@ -453,11 +453,11 @@
             return `
             <tr class="hover:bg-slate-50 transition border-b border-slate-100">
                 <td class="px-6 py-4 font-bold text-navy">
-                    ${row.invoice_no || 'N/A'}
-                </td>
-                <td class="px-6 py-4">
-                   <span class="font-semibold text-slate-700">${row.customer_name || 'Unknown Vendor'}</span>
-                </td>
+    ${row.invoice_number || 'N/A'}
+</td>
+<td class="px-6 py-4">
+   <span class="font-semibold text-slate-700">${row.customer?.customer_name || 'Unknown Vendor'}</span>
+</td>
                 <td class="px-6 py-4 text-slate-600">
                     ${formatDate(row.invoice_date)}
                 </td>

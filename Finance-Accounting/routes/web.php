@@ -13,10 +13,14 @@ use App\Http\Controllers\AccountsReceivableController;
 use App\Http\Controllers\BudgetController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AccountController;
+
 use App\Http\Controllers\BillViewController;
 
 Route::get('/bills', [BillViewController::class, 'index'])->name('bills.index');
 Route::get('/bills/{bill}', [BillViewController::class, 'show'])->name('bills.show');
+
+use App\Http\Controllers\SalesSyncController;
+
 /**
  * Add these lines to your existing routes/web.php
  * (put them inside your `auth` middleware group if you have one).
@@ -330,6 +334,9 @@ Route::post('/accounts-receivable/payment', [AccountsReceivableController::class
 Route::get('/accounts-receivable/customers/{id}/invoices', [AccountsReceivableController::class, 'customerInvoices'])
     ->name('receivable.customerInvoices');
 
+
+Route::post('/accounts-receivable/sync', [SalesSyncController::class, 'sync'])
+    ->name('receivable.sync');
 
 /*
 |--------------------------------------------------------------------------

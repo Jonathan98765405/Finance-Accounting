@@ -30,6 +30,7 @@ class Invoice extends Model
         'balance',
         'status',
         'notes',
+        'sales_invoice_id',
     ];
 
     public function customer()
@@ -40,5 +41,10 @@ class Invoice extends Model
     public function items()
     {
         return $this->hasMany(InvoiceItem::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class, 'invoice_id');
     }
 }

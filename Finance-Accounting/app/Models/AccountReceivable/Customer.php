@@ -19,6 +19,7 @@ class Customer extends Model
         'address',
         'email',
         'phone',
+        'sales_customer_id',
     ];
 
     public function invoices()
