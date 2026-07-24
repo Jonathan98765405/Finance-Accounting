@@ -7,6 +7,12 @@
 @section('content')
 <!-- Action Ribbon -->
 <div class="flex flex-wrap items-center justify-end gap-3 mb-6 no-print">
+
+<button type="button" id="syncSalesBtn" onclick="triggerProtectedAction(syncFromSales)"
+class="inline-flex items-center gap-2 bg-white text-navy border border-navy px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm hover:bg-slate-50 transition">
+    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+    
+</button>
     <a href="javascript:void(0)" onclick="handleProtectedNavigation('{{ url('/accounts-receivable/invoice') }}')"
     class="inline-flex items-center gap-2 bg-navy text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm hover:bg-navy/95 transition">
         <i data-lucide="plus" class="w-4 h-4"></i>
@@ -211,6 +217,44 @@
 
 @push('scripts')
 <script>
+
+function syncFromSales() {
+    const btn = document.getElementById('syncSalesBtn');
+    const originalHtml = btn.innerHTML;
+
+    btn.disabled = true;
+    btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Syncing...`;
+    lucide.createIcons();
+
+    fetch('/accounts-receivable/sync', {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': CSRF_TOKEN
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            AppUI.showToast(data.message, 'success');
+            window.location.reload();
+        } else {
+            AppUI.showToast(data.message || 'Sync failed.', 'error');
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            lucide.createIcons();
+        }
+    })
+    .catch(() => {
+        AppUI.showToast('Sync failed.', 'error');
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+        lucide.createIcons();
+    });
+}
+
+
+
 // Persistent role state derived safely on session refresh
 window.canManageAR = @json(\App\Models\Role::activeRoleCanManageAR());
 

@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'sales' => [
+        'base_url' => env('SALES_API_BASE_URL'),
+        'token' => env('SALES_API_TOKEN'),
+    ],
+
 ];
