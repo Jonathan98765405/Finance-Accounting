@@ -14,10 +14,10 @@ Route::prefix('v1')->group(function () {
     Route::get('/sales-invoices', [SalesInvoiceApiController::class, 'index']);
     Route::get('/sales-invoices/{salesInvoice}', [SalesInvoiceApiController::class, 'show']);
 
-    // Accounts Receivable (Finance/Accounting) — protected, kailangan ng API token
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/ar/invoices', [SalesInvoiceApiController::class, 'unpaidInvoices']);
         Route::get('/ar/aging-summary', [SalesInvoiceApiController::class, 'agingSummary']);
+        Route::patch('/sales-invoices/{salesInvoice}/mark-paid', [SalesInvoiceApiController::class, 'markPaid']);
     });
 
 });

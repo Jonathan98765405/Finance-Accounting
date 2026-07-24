@@ -10,11 +10,11 @@ use Illuminate\Http\Request;
 class SalesInvoiceApiController extends Controller
 {
     public function index()
-    {
-        return response()->json(
-            SalesInvoice::with('customer')->get()
-        );
-    }
+{
+    return response()->json(
+        SalesInvoice::with('customer', 'items')->get()
+    );
+}
 
     public function show(SalesInvoice $salesInvoice)
     {
@@ -162,5 +162,15 @@ class SalesInvoiceApiController extends Controller
             $daysOverdue <= 90 => '61-90',
             default => '90+',
         };
+    }
+
+    public function markPaid(SalesInvoice $salesInvoice): JsonResponse
+    {
+        $salesInvoice->update(['payment_status' => 'Paid']);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Invoice {$salesInvoice->invoice_no} marked as Paid.",
+        ]);
     }
 }
