@@ -24,8 +24,10 @@ class DashboardController extends Controller
         $adminFirstName = optional(Auth::user())->first_name ?? 'Admin';
 
         // ================= ACCOUNT PAYABLE (real) =================
+        // Same query AccountsPayableController::dashboard() uses for totalAP,
+        // so this card always matches the AP module's own dashboard.
         try {
-            $accountPayableRaw = ApInvoice::whereNotIn('status', ['paid'])->sum('total_amount');
+            $accountPayableRaw = ApInvoice::whereNotIn('payment_status', ['paid'])->sum('amount');
             $accountPayable = '₱' . number_format($accountPayableRaw, 2);
         } catch (\Throwable $e) {
             report($e);

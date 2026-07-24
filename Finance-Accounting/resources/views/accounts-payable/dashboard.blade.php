@@ -278,6 +278,7 @@
             </tr>
             `,
             @endforeach
+            
         ].join('');
 
         const modalHtml = `

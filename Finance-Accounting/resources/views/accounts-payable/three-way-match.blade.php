@@ -246,14 +246,16 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 text-slate-600 font-medium">
-                                @foreach ($invoice->items as $item)
-                                    <tr>
-                                        <td class="p-2.5 truncate max-w-[100px] text-slate-800 font-bold">{{ $item->description }}</td>
-                                        <td class="p-2.5 text-center">{{ rtrim(rtrim(number_format($item->quantity, 2), '0'), '.') }}</td>
-                                        <td class="p-2.5 text-right">₱{{ number_format($item->unit_price, 2) }}</td>
-                                        <td class="p-2.5 text-right font-semibold text-slate-700">₱{{ number_format($item->amount, 2) }}</td>
-                                    </tr>
-                                @endforeach
+                                @if (Schema::hasTable('ap_invoice_items') && method_exists($invoice, 'items'))
+                                    @foreach ($invoice->items as $item)
+                                        <tr>
+                                            <td class="p-2.5 truncate max-w-[100px] text-slate-800 font-bold">{{ $item->description }}</td>
+                                            <td class="p-2.5 text-center">{{ rtrim(rtrim(number_format($item->quantity, 2), '0'), '.') }}</td>
+                                            <td class="p-2.5 text-right">₱{{ number_format($item->unit_price, 2) }}</td>
+                                            <td class="p-2.5 text-right font-semibold text-slate-700">₱{{ number_format($item->amount, 2) }}</td>
+                                        </tr>
+                                    @endforeach
+                                @endif
                             </tbody>
                         </table>
                     </div>
