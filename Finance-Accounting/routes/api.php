@@ -5,11 +5,15 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AccountsPayableController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\BillController;
-use App\Http\Controllers\Api\PurchaseOrderSyncController;
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/purchase-orders/sync', [PurchaseOrderSyncController::class, 'store']);
-});
+// NOTE: The old top-level route to PurchaseOrderSyncController was removed —
+// it pointed at a controller that doesn't exist yet and duplicated the
+// /v1/ap/purchase-orders/sync route below. There is now exactly ONE
+// sync endpoint, so Procurement's PROCUREMENT_API config must point here:
+//
+//   FINANCE_API_URL = http://finance-accounting.test/api/v1/ap
+//
+// (Procurement's syncToAP() appends "/purchase-orders/sync" itself.)
 
 // Public Authentication Route
 Route::post('/v1/login', [AuthController::class, 'login']);
@@ -19,7 +23,7 @@ Route::middleware('auth:sanctum')->post('/v1/logout', [AuthController::class, 'l
 
 Route::middleware(['auth:sanctum'])->prefix('v1/ap')->name('api.v1.ap.')->group(function () {
 
-    // Sync Purchase Order to Bill (AP)
+    // Sync Purchase Order to Bill (AP) — this is the ONLY sync endpoint now
     Route::post('/purchase-orders/sync', [BillController::class, 'store'])->name('po.sync');
 
     // AP Dashboard
