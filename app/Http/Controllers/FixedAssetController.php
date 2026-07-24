@@ -62,9 +62,9 @@ class FixedAssetController extends Controller
         ->orderByDesc('asset_id')
         ->first();
     $lastNumber = $lastAsset ? (int) substr($lastAsset->asset_tag, -3) : 0;
-    $nextTag = 'FA-' . $year . '-' . str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+    $tag = 'FA-' . $year . '-' . str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
 
-    return view('fixed-assets.register', compact('categories', 'nextTag'));
+    return view('fixed-assets.register', compact('categories', 'tag'));
 }
 
     public function store(Request $request)
@@ -117,9 +117,6 @@ class FixedAssetController extends Controller
 
     return redirect('/fixed-assets')->with('success', 'Asset successfully registered!');
 }
-
-        
-
     public function assignment($id = null)
     {
         if ($id) {
@@ -244,4 +241,5 @@ public function dispose(Request $request, $id)
     $this->gl->postDisposal($asset->fresh());
 
     return redirect('/fixed-assets')->with('success', 'Asset successfully disposed!');
+}
 }
