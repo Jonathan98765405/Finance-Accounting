@@ -53,8 +53,9 @@ class PurchaseOrderController extends Controller
                 'requisition_id' => $validated['requisition_id'] ?? null,
                 'created_by'     => auth()->id(),
                 'total_amount'   => $totalAmount,
-                // POs must be approved before they can sync to AP — see ApprovalController.
-                'status'         => 'pending_approval',
+                // Approval step removed — POs go straight to "approved" so
+                // Sync to AP is available immediately after creation.
+                'status'         => 'approved',
             ]);
 
             foreach ($validated['items'] as $item) {
@@ -69,7 +70,7 @@ class PurchaseOrderController extends Controller
             return $po;
         });
 
-        return redirect()->route('purchase-orders.index')->with('success', 'Purchase Order created and awaiting approval.');
+        return redirect()->route('purchase-orders.index')->with('success', 'Purchase Order created and ready to sync.');
     }
 
     public function convertFromRequisition(Requisition $requisition, Request $request)
@@ -91,7 +92,8 @@ class PurchaseOrderController extends Controller
                 'requisition_id' => $requisition->id,
                 'created_by'     => auth()->id(),
                 'total_amount'   => $requisition->total_amount,
-                'status'         => 'pending_approval',
+                // Approval step removed — see note in store() above.
+                'status'         => 'approved',
             ]);
 
             foreach ($requisition->items as $item) {
@@ -108,7 +110,7 @@ class PurchaseOrderController extends Controller
             return $po;
         });
 
-        return redirect()->route('purchase-orders.index')->with('success', 'PO created from requisition and awaiting approval.');
+        return redirect()->route('purchase-orders.index')->with('success', 'PO created from requisition and ready to sync.');
     }
 
     // Handoff to external Accounts Payable (AP) app via Sanctum API
@@ -123,14 +125,22 @@ class PurchaseOrderController extends Controller
         }
 
         try {
+            // Load the vendor so we can send its name/email/phone along with
+            // the sync — this lets Finance-Accounting create a matching
+            // Supplier record instead of falling back to a placeholder name.
+            $vendor = $purchaseOrder->vendor;
+
             $response = Http::withToken(config('services.finance.token'))
                 ->withHeaders(['Accept' => 'application/json'])
                 ->timeout(15)
                 ->post(config('services.finance.url') . '/purchase-orders/sync', [
-                    'po_number'    => $purchaseOrder->po_number,
-                    'vendor_id'    => $purchaseOrder->vendor_id,
-                    'total_amount' => $purchaseOrder->total_amount,
-                    'items'        => $purchaseOrder->items->toArray(),
+                    'po_number'     => $purchaseOrder->po_number,
+                    'vendor_id'     => $purchaseOrder->vendor_id,
+                    'vendor_name'   => $vendor?->name,
+                    'vendor_email'  => $vendor?->email,
+                    'vendor_phone'  => $vendor?->phone,
+                    'total_amount'  => $purchaseOrder->total_amount,
+                    'items'         => $purchaseOrder->items->toArray(),
                 ]);
 
             if ($response->successful()) {
