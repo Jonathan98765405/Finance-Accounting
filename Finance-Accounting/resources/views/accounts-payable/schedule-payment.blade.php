@@ -76,7 +76,8 @@
                                 <p class="text-xs text-slate-500">{{ $invoice->supplier->name ?? '—' }}</p>
                             </div>
                             <div class="text-right">
-                                <p class="text-sm font-extrabold text-navy">₱{{ number_format($invoice->amount, 2) }}</p>
+                                {{-- FIX: this model's amount field is total_amount, not amount --}}
+                                <p class="text-sm font-extrabold text-navy">₱{{ number_format($invoice->total_amount, 2) }}</p>
                                 <p class="text-[11px] {{ $invoice->due_date && $invoice->due_date->isPast() ? 'text-brand-red font-semibold' : 'text-slate-400' }}">
                                     Due {{ $invoice->due_date?->format('M d, Y') ?? '—' }}
                                 </p>
