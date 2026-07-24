@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\FixedAssets\FixedAsset;
 use App\Models\FixedAssets\AssetCategory;
+use App\Models\FixedAssets\ActivityLog;
 use App\Services\GeneralLedgerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -17,48 +18,111 @@ class FixedAssetController extends Controller
         $this->gl = $gl;
     }
 
-    public function index()
-{
-    if (Schema::hasTable('fa_fixed_assets')) {
-        $fixedAssets = FixedAsset::with('category')->get();
-    } else {
-        $fixedAssets = collect();
+    private function actor(): string
+    {
+        return auth()->check() ? auth()->user()->name : 'Admin User';
     }
 
-    $statusMap = [
-        'active' => 'Active',
-        'disposed' => 'Disposed',
-        'under_maintenance' => 'Under Maintenance',
-    ];
+    public function index(Request $request)
+    {
+        if (Schema::hasTable('fa_fixed_assets')) {
+            $allAssets = FixedAsset::with('category')->get();
 
-    $stats = [
-        ['label' => 'Total Assets', 'value' => $fixedAssets->count(), 'icon' => 'fa-warehouse', 'color' => '#22B57A'],
-        ['label' => 'Total Assets Value', 'value' => '₱' . number_format($fixedAssets->sum('acquisition_cost'), 2), 'icon' => 'fa-dollar-sign', 'color' => '#22B57A'],
-        ['label' => 'Accumulated Depreciation', 'value' => '₱' . number_format($fixedAssets->sum('accumulated_depreciation'), 2), 'icon' => 'fa-chart-line', 'color' => '#22B57A'],
-        ['label' => 'Under Maintenance', 'value' => $fixedAssets->where('status', 'under_maintenance')->count(), 'icon' => 'fa-screwdriver-wrench', 'color' => '#F5A623'],
-    ];
+            $query = FixedAsset::with('category');
+            if ($request->filled('category')) {
+                $query->whereHas('category', fn($q) => $q->where('category_name', $request->category));
+            }
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+            if ($request->filled('search')) {
+                $query->where('asset_name', 'like', '%' . $request->search . '%');
+            }
+            $paginated = $query->orderByDesc('asset_id')->paginate(5)->withQueryString();
+        } else {
+            $allAssets = collect();
+            $paginated = new \Illuminate\Pagination\LengthAwarePaginator(collect(), 0, 5);
+        }
 
-    $assets = $fixedAssets->map(function ($asset) use ($statusMap) {
-        return [
-            'asset_id' => $asset->asset_id,
-            'id' => $asset->asset_tag,
-            'name' => $asset->asset_name,
-            'category' => $asset->category->category_name ?? 'Uncategorized',
-            'location' => $asset->location,
-            'date' => $asset->acquisition_date->format('M d, Y'),
-            'cost' => '₱' . number_format($asset->acquisition_cost, 2),
-            'status' => $statusMap[$asset->status] ?? ucfirst($asset->status),
+        $statusMap = [
+            'active' => 'Active',
+            'disposed' => 'Disposed',
+            'under_maintenance' => 'Under Maintenance',
+            'fully_depreciated' => 'Fully Depreciated',
         ];
-    });
 
-    return view('fixed-assets.index', compact('stats', 'assets'));
-}
+        $stats = [
+            ['label' => 'Total Assets', 'value' => $allAssets->count(), 'icon' => 'fa-warehouse', 'color' => '#22B57A'],
+            ['label' => 'Total Assets Value', 'value' => '₱' . number_format($allAssets->sum('acquisition_cost'), 2), 'icon' => 'fa-dollar-sign', 'color' => '#22B57A'],
+            ['label' => 'Accumulated Depreciation', 'value' => '₱' . number_format($allAssets->sum('accumulated_depreciation'), 2), 'icon' => 'fa-chart-line', 'color' => '#22B57A'],
+            ['label' => 'Under Maintenance', 'value' => $allAssets->where('status', 'under_maintenance')->count(), 'icon' => 'fa-screwdriver-wrench', 'color' => '#F5A623'],
+        ];
+
+        // Dynamic Category Breakdown (base sa totoong datos)
+        $totalCount = max($allAssets->count(), 1);
+        $categoryBreakdown = $allAssets
+            ->groupBy(fn($a) => $a->category->category_name ?? 'Uncategorized')
+            ->map(fn($group, $name) => [
+                'label' => $name,
+                'percent' => round($group->count() / $totalCount * 100),
+            ])
+            ->sortByDesc('percent')
+            ->values();
+
+        // Dynamic Status Breakdown (base sa totoong datos, valid statuses lang)
+        $statusBreakdown = collect($statusMap)->map(function ($label, $key) use ($allAssets, $totalCount) {
+            return [
+                'label' => $label,
+                'percent' => round($allAssets->where('status', $key)->count() / $totalCount * 100),
+            ];
+        })->filter(fn($s) => $s['percent'] > 0)->values();
+
+        $assets = $paginated->through(function ($asset) use ($statusMap) {
+            return [
+                'asset_id' => $asset->asset_id,
+                'id' => $asset->asset_tag,
+                'name' => $asset->asset_name,
+                'category' => $asset->category->category_name ?? 'Uncategorized',
+                'location' => $asset->location,
+                'date' => $asset->acquisition_date->format('M d, Y'),
+                'cost' => '₱' . number_format($asset->acquisition_cost, 2),
+                'status' => $statusMap[$asset->status] ?? ucfirst($asset->status),
+            ];
+        });
+
+        // ✅ Real Recent Activities (mula sa fa_activity_logs table)
+        $iconMap = [
+            'created'  => ['icon' => 'plus',      'color' => '#1F2937'],
+            'updated'  => ['icon' => 'pencil',    'color' => '#3B82F6'],
+            'deleted'  => ['icon' => 'trash-2',   'color' => '#EF4444'],
+            'disposed' => ['icon' => 'archive',   'color' => '#F5A623'],
+        ];
+
+        $recentActivities = Schema::hasTable('fa_activity_logs')
+            ? ActivityLog::orderByDesc('created_at')->limit(5)->get()->map(function ($log) use ($iconMap) {
+                $meta = $iconMap[$log->action] ?? ['icon' => 'info', 'color' => '#6B7280'];
+                return [
+                    'icon' => $meta['icon'],
+                    'color' => $meta['color'],
+                    'text' => $log->description,
+                    'time' => $log->created_at->diffForHumans(),
+                ];
+            })
+            : collect();
+
+        return view('fixed-assets.index', compact('stats', 'assets', 'categoryBreakdown', 'statusBreakdown', 'recentActivities'));
+    }
+
     public function create()
     {
         $categories = AssetCategory::all();
 
-        $nextNumber = FixedAsset::count() + 1;
-        $tag = 'FA-' . date('Y') . '-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+        $year = date('Y');
+        $lastAsset = FixedAsset::where('asset_tag', 'like', "FA-{$year}-%")
+            ->orderByDesc('asset_id')
+            ->first();
+        $lastNumber = $lastAsset ? (int) substr($lastAsset->asset_tag, -3) : 0;
+        $tag = 'FA-' . $year . '-' . str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
 
         return view('fixed-assets.register', compact('categories', 'tag'));
     }
@@ -78,30 +142,44 @@ class FixedAssetController extends Controller
             'condition' => 'nullable|in:New,Good,Fair,Poor',
         ]);
 
-        $nextNumber = FixedAsset::count() + 1;
-        $tag = 'FA-' . date('Y') . '-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+        $asset = \DB::transaction(function () use ($validated) {
+            $year = date('Y');
 
-        $asset = FixedAsset::create([
-            'asset_tag' => $tag,
-            'asset_name' => $validated['asset_name'],
-            'category_id' => $validated['category_id'],
-            'acquisition_date' => $validated['acquisition_date'],
-            'acquisition_cost' => $validated['acquisition_cost'],
-            'salvage_value' => 0,
-            'useful_life_years' => 5,
-            'depreciation_method' => 'straight_line',
-            'accumulated_depreciation' => 0,
-            'book_value' => $validated['acquisition_cost'],
-            'location' => $validated['location'] ?? null,
-            'status' => $validated['status'] ?? 'active',
-            'serial_number' => $validated['serial_number'] ?? null,
-            'warranty_years' => $validated['warranty_years'] ?? null,
-            'description' => $validated['description'] ?? null,
-            'condition' => $validated['condition'] ?? 'Good',
-        ]);
+            $lastAsset = FixedAsset::where('asset_tag', 'like', "FA-{$year}-%")
+                ->lockForUpdate()
+                ->orderByDesc('asset_id')
+                ->first();
 
-        // Auto-post the acquisition to the General Ledger
+            $lastNumber = $lastAsset ? (int) substr($lastAsset->asset_tag, -3) : 0;
+            $tag = 'FA-' . $year . '-' . str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+
+            return FixedAsset::create([
+                'asset_tag' => $tag,
+                'asset_name' => $validated['asset_name'],
+                'category_id' => $validated['category_id'],
+                'acquisition_date' => $validated['acquisition_date'],
+                'acquisition_cost' => $validated['acquisition_cost'],
+                'salvage_value' => 0,
+                'useful_life_years' => 5,
+                'depreciation_method' => 'straight_line',
+                'accumulated_depreciation' => 0,
+                'book_value' => $validated['acquisition_cost'],
+                'location' => $validated['location'] ?? null,
+                'status' => $validated['status'] ?? 'active',
+                'serial_number' => $validated['serial_number'] ?? null,
+                'warranty_years' => $validated['warranty_years'] ?? null,
+                'description' => $validated['description'] ?? null,
+                'condition' => $validated['condition'] ?? 'Good',
+            ]);
+        });
+
         $this->gl->postAssetAcquisition($asset);
+
+        ActivityLog::create([
+            'action' => 'created',
+            'description' => "New asset {$asset->asset_name} added",
+            'performed_by' => $this->actor(),
+        ]);
 
         return redirect('/fixed-assets')->with('success', 'Asset successfully registered!');
     }
@@ -183,12 +261,19 @@ class FixedAssetController extends Controller
             'book_value' => $bookValue,
         ]);
 
+        ActivityLog::create([
+            'action' => 'updated',
+            'description' => "Asset {$asset->asset_name} updated",
+            'performed_by' => $this->actor(),
+        ]);
+
         return redirect('/fixed-assets/assignment/' . $asset->asset_id)->with('success', 'Asset successfully updated!');
     }
 
     public function destroy($id)
     {
         $asset = FixedAsset::findOrFail($id);
+        $assetName = $asset->asset_name;
 
         // Remove every GL entry ever posted for this asset (acquisition,
         // any depreciation periods, and disposal) so the GL doesn't keep
@@ -197,38 +282,51 @@ class FixedAssetController extends Controller
 
         $asset->delete();
 
+        ActivityLog::create([
+            'action' => 'deleted',
+            'description' => "Asset {$assetName} deleted",
+            'performed_by' => $this->actor(),
+        ]);
+
         return redirect('/fixed-assets')->with('success', 'Asset successfully deleted!');
     }
+
     public function disposeForm($id)
-{
-    $asset = FixedAsset::findOrFail($id);
-    return view('fixed-assets.dispose', compact('asset'));
-}
+    {
+        $asset = FixedAsset::findOrFail($id);
+        return view('fixed-assets.dispose', compact('asset'));
+    }
 
-public function dispose(Request $request, $id)
-{
-    $asset = FixedAsset::findOrFail($id);
+    public function dispose(Request $request, $id)
+    {
+        $asset = FixedAsset::findOrFail($id);
 
-    $validated = $request->validate([
-        'disposal_date'   => 'required|date',
-        'disposal_value'  => 'required|numeric|min:0',
-        'disposal_reason' => 'required|in:sold,scrapped,donated,lost',
-    ]);
+        $validated = $request->validate([
+            'disposal_date'   => 'required|date',
+            'disposal_value'  => 'required|numeric|min:0',
+            'disposal_reason' => 'required|in:sold,scrapped,donated,lost',
+        ]);
 
-    // Gain/Loss = Disposal Value - Book Value (at time of disposal)
-    $gainLoss = $validated['disposal_value'] - $asset->book_value;
+        // Gain/Loss = Disposal Value - Book Value (at time of disposal)
+        $gainLoss = $validated['disposal_value'] - $asset->book_value;
 
-    $asset->update([
-        'status'          => 'disposed',
-        'disposal_date'   => $validated['disposal_date'],
-        'disposal_value'  => $validated['disposal_value'],
-        'disposal_reason' => $validated['disposal_reason'],
-        'gain_loss'       => $gainLoss,
-    ]);
+        $asset->update([
+            'status'          => 'disposed',
+            'disposal_date'   => $validated['disposal_date'],
+            'disposal_value'  => $validated['disposal_value'],
+            'disposal_reason' => $validated['disposal_reason'],
+            'gain_loss'       => $gainLoss,
+        ]);
 
-    // Auto-post the disposal to the General Ledger
-    $this->gl->postDisposal($asset->fresh());
+        // Auto-post the disposal to the General Ledger
+        $this->gl->postDisposal($asset->fresh());
 
-    return redirect('/fixed-assets')->with('success', 'Asset successfully disposed!');
-}
+        ActivityLog::create([
+            'action' => 'disposed',
+            'description' => "Asset {$asset->asset_name} disposed",
+            'performed_by' => $this->actor(),
+        ]);
+
+        return redirect('/fixed-assets')->with('success', 'Asset successfully disposed!');
+    }
 }

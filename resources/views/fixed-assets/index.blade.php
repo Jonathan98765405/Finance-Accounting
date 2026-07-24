@@ -8,7 +8,6 @@
 @section('page-subtitle','Manage company fixed assets.')
 
 @section('content')
-{{-- Munar 3:34 --}}
     {{-- Header --}}
     <div class="flex items-start justify-between mb-6">
         <div>
@@ -90,12 +89,19 @@
                 <div class="shrink-0">
                     <canvas id="categoryChart" width="100" height="100"></canvas>
                 </div>
+                @php
+                    $categoryColors = ['#3B82F6', '#8B5CF6', '#F5A623', '#22B57A', '#EF4444', '#A855F7', '#14B8A6'];
+                @endphp
                 <ul class="text-xs text-gray-600 space-y-1.5 flex-1 min-w-0">
-                    <li class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:#3B82F6;"></span><span class="flex-1 whitespace-nowrap">IT Equipment</span><span class="text-gray-400 shrink-0">40%</span></li>
-                    <li class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:#8B5CF6;"></span><span class="flex-1 whitespace-nowrap">Furniture &amp; Fixtures</span><span class="text-gray-400 shrink-0">25%</span></li>
-                    <li class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:#F5A623;"></span><span class="flex-1 whitespace-nowrap">Vehicles</span><span class="text-gray-400 shrink-0">20%</span></li>
-                    <li class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:#22B57A;"></span><span class="flex-1 whitespace-nowrap">Machinery &amp; Equipment</span><span class="text-gray-400 shrink-0">10%</span></li>
-                    <li class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:#EF4444;"></span><span class="flex-1 whitespace-nowrap">Others</span><span class="text-gray-400 shrink-0">5%</span></li>
+                    @forelse ($categoryBreakdown as $i => $cat)
+                        <li class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:{{ $categoryColors[$i % count($categoryColors)] }};"></span>
+                            <span class="flex-1 whitespace-nowrap">{{ $cat['label'] }}</span>
+                            <span class="text-gray-400 shrink-0">{{ $cat['percent'] }}%</span>
+                        </li>
+                    @empty
+                        <li class="text-gray-400">No assets yet</li>
+                    @endforelse
                 </ul>
             </div>
         </div>
@@ -107,70 +113,75 @@
                 <div class="shrink-0">
                     <canvas id="statusChart" width="100" height="100"></canvas>
                 </div>
+                @php
+                    $statusColorsMap = [
+                        'Active' => '#22B57A',
+                        'Disposed' => '#EF4444',
+                        'Under Maintenance' => '#F5A623',
+                        'Fully Depreciated' => '#6B7280',
+                    ];
+                @endphp
                 <ul class="text-xs text-gray-600 space-y-1.5 flex-1 min-w-0">
-                    <li class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:#22B57A;"></span><span class="flex-1 whitespace-nowrap">Active</span><span class="text-gray-400 shrink-0">60%</span></li>
-                    <li class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:#3B82F6;"></span><span class="flex-1 whitespace-nowrap">In use</span><span class="text-gray-400 shrink-0">20%</span></li>
-                    <li class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:#F5A623;"></span><span class="flex-1 whitespace-nowrap">Under Maintenance</span><span class="text-gray-400 shrink-0">15%</span></li>
-                    <li class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:#EF4444;"></span><span class="flex-1 whitespace-nowrap">Disposed</span><span class="text-gray-400 shrink-0">5%</span></li>
+                    @forelse ($statusBreakdown as $s)
+                        <li class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:{{ $statusColorsMap[$s['label']] ?? '#9CA3AF' }};"></span>
+                            <span class="flex-1 whitespace-nowrap">{{ $s['label'] }}</span>
+                            <span class="text-gray-400 shrink-0">{{ $s['percent'] }}%</span>
+                        </li>
+                    @empty
+                        <li class="text-gray-400">No assets yet</li>
+                    @endforelse
                 </ul>
             </div>
         </div>
 
-        {{-- Recent Activities --}}
-        <div class="bg-white rounded-lg border border-gray-200 p-4">
-            <span class="panel-badge inline-block text-black text-xs font-semibold px-3 py-1.5 rounded-md mb-3">Recent Activities</span>
-            <ul class="space-y-3 text-xs">
-                @php
-                    $activities = [
-                        ['icon' => 'plus', 'color' => '#1F2937', 'text' => 'New asset Dell Laptop added', 'time' => '2h ago'],
-                        ['icon' => 'wrench', 'color' => '#F5A623', 'text' => 'Maintenance scheduled for Office Printer', 'time' => '4h ago'],
-                        ['icon' => 'truck', 'color' => '#EF4444', 'text' => 'Asset Toyota Hiace marked as in use', 'time' => '1d ago'],
-                        ['icon' => 'trending-up', 'color' => '#22B57A', 'text' => 'Depreciation posted for May 2025', 'time' => '2d ago'],
-                        ['icon' => 'archive', 'color' => '#22B57A', 'text' => 'Asset Office Chair disposed', 'time' => '3d ago'],
-                    ];
-                @endphp
-                @foreach ($activities as $a)
-                    <li class="flex items-start gap-2.5">
-                        <span class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5" style="background: {{ $a['color'] }};">
-                            <i data-lucide="{{ $a['icon'] }}" class="text-white" style="width:9px;height:9px;"></i>
-                        </span>
-                        <div class="flex-1 flex items-center justify-between gap-2">
-                            <span class="text-gray-700">{{ $a['text'] }}</span>
-                            <span class="text-gray-400 whitespace-nowrap">{{ $a['time'] }}</span>
-                        </div>
-                    </li>
-                @endforeach
-            </ul>
-        </div>
-    </div>
+       {{-- Recent Activities --}}
+   <div class="bg-white rounded-lg border border-gray-200 p-4">
+       <span class="panel-badge inline-block text-black text-xs font-semibold px-3 py-1.5 rounded-md mb-3">Recent Activities</span>
+       <ul class="space-y-3 text-xs">
+           @forelse ($recentActivities as $a)
+               <li class="flex items-start gap-2.5">
+                   <span class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5" style="background: {{ $a['color'] }};">
+                       <i data-lucide="{{ $a['icon'] }}" class="text-white" style="width:9px;height:9px;"></i>
+                   </span>
+                   <div class="flex-1 flex items-center justify-between gap-2">
+                       <span class="text-gray-700">{{ $a['text'] }}</span>
+                       <span class="text-gray-400 whitespace-nowrap">{{ $a['time'] }}</span>
+                   </div>
+               </li>
+           @empty
+               <li class="text-gray-400">No recent activity yet.</li>
+           @endforelse
+       </ul>
+   </div>
+    </div>  
 
     {{-- Recent Assets Table --}}
     <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div class="p-4 flex items-center justify-between gap-3">
+        <form method="GET" action="{{ url('/fixed-assets') }}" class="p-4 flex items-center justify-between gap-3">
             <span class="panel-badge inline-block text-grey text-xs font-semibold px-3 py-1.5 rounded-md">Recent Assets</span>
             <div class="relative w-72">
                 <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" style="width:14px;height:14px;"></i>
-                <input type="text" placeholder="Search assets..."
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Search assets..."
                        class="w-full pl-9 pr-3 py-2 rounded-md border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100">
             </div>
             <div class="flex gap-3">
-                <select class="border border-gray-200 rounded-md text-sm px-3 py-2">
-                    <option>All Categories</option>
-                    <option>IT Equipment</option>
-                    <option>Furniture &amp; Fixtures</option>
-                    <option>Vehicles</option>
-                    <option>Machinery &amp; Equipment</option>
-                    <option>Others</option>
+                <select name="category" onchange="this.form.submit()" class="border border-gray-200 rounded-md text-sm px-3 py-2">
+                    <option value="">All Categories</option>
+                    @foreach (['IT Equipment', 'Furniture & Fixtures', 'Vehicles', 'Machinery & Equipment', 'Others'] as $catOption)
+                        <option value="{{ $catOption }}" {{ request('category') === $catOption ? 'selected' : '' }}>{{ $catOption }}</option>
+                    @endforeach
                 </select>
-                <select class="border border-gray-200 rounded-md text-sm px-3 py-2">
-                    <option>All Status</option>
-                    <option>Active</option>
-                    <option>In use</option>
-                    <option>Under Maintenance</option>
-                    <option>Disposed</option>
+                <select name="status" onchange="this.form.submit()" class="border border-gray-200 rounded-md text-sm px-3 py-2">
+                    <option value="">All Status</option>
+                    <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
+                    <option value="under_maintenance" {{ request('status') === 'under_maintenance' ? 'selected' : '' }}>Under Maintenance</option>
+                    <option value="disposed" {{ request('status') === 'disposed' ? 'selected' : '' }}>Disposed</option>
+                    <option value="fully_depreciated" {{ request('status') === 'fully_depreciated' ? 'selected' : '' }}>Fully Depreciated</option>
                 </select>
+                <button type="submit" class="px-4 py-2 rounded-md text-white text-sm font-medium" style="background:#173A66;">Filter</button>
             </div>
-        </div>
+        </form>
 
         <table class="w-full text-sm">
             <thead>
@@ -188,12 +199,12 @@
                 @php
                     $statusColors = [
                         'Active' => 'background:#D6F5DF;color:#16A34A;',
-                        'In use' => 'background:#173A66;color:#FFFFFF;',
                         'Under Maintenance' => 'background:#F5A623;color:#FFFFFF;',
                         'Disposed' => 'background:#FEE2E2;color:#DC2626;',
+                        'Fully Depreciated' => 'background:#E5E7EB;color:#374151;',
                     ];
                 @endphp
-                @foreach ($assets as $asset)
+                @forelse ($assets as $asset)
                     <tr class="border-b border-gray-50 hover:bg-gray-50">
                         <td class="px-4 py-3 font-medium" style="color:#173A66;">{{ $asset['id'] }}</td>
                         <td class="px-4 py-3">
@@ -206,23 +217,23 @@
                         <td class="px-4 py-3 text-gray-500">{{ $asset['date'] }}</td>
                         <td class="px-4 py-3 text-green-600 font-medium">{{ $asset['cost'] }}</td>
                         <td class="px-4 py-3">
-                            <span class="px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap" style="{{ $statusColors[$asset['status']] }}">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap" style="{{ $statusColors[$asset['status']] ?? 'background:#F3F4F6;color:#374151;' }}">
                                 {{ $asset['status'] }}
                             </span>
                         </td>
                     </tr>
-                @endforeach
+                @empty
+                    <tr>
+                        <td colspan="7" class="px-4 py-6 text-center text-gray-400">No assets found.</td>
+                    </tr>
+                @endforelse
             </tbody>
         </table>
 
         <div class="flex items-center justify-between px-4 py-3 text-xs text-gray-400">
-            <span>Showing 1 to 5 of 125 entries</span>
+            <span>Showing {{ $assets->firstItem() ?? 0 }} to {{ $assets->lastItem() ?? 0 }} of {{ $assets->total() }} entries</span>
             <div class="flex gap-1">
-                <button class="w-7 h-7 rounded-md text-white text-xs" style="background:#173A66;">1</button>
-                <button class="w-7 h-7 rounded-md border border-gray-200 text-xs">2</button>
-                <button class="w-7 h-7 rounded-md border border-gray-200 text-xs">3</button>
-                <span class="px-1">...</span>
-                <button class="w-7 h-7 rounded-md border border-gray-200 text-xs">25</button>
+                {{ $assets->links() }}
             </div>
         </div>
     </div>
@@ -234,10 +245,10 @@
         new Chart(document.getElementById('categoryChart'), {
             type: 'doughnut',
             data: {
-                labels: ['IT Equipment', 'Furniture & Fixtures', 'Vehicles', 'Machinery & Equipment', 'Others'],
+                labels: {!! json_encode($categoryBreakdown->pluck('label')) !!},
                 datasets: [{
-                    data: [40, 25, 20, 10, 5],
-                    backgroundColor: ['#3B82F6', '#8B5CF6', '#F5A623', '#22B57A', '#EF4444'],
+                    data: {!! json_encode($categoryBreakdown->pluck('percent')) !!},
+                    backgroundColor: ['#3B82F6', '#8B5CF6', '#F5A623', '#22B57A', '#EF4444', '#A855F7', '#14B8A6'],
                     borderWidth: 0
                 }]
             },
@@ -247,10 +258,10 @@
         new Chart(document.getElementById('statusChart'), {
             type: 'doughnut',
             data: {
-                labels: ['Active', 'In use', 'Under Maintenance', 'Disposed'],
+                labels: {!! json_encode($statusBreakdown->pluck('label')) !!},
                 datasets: [{
-                    data: [60, 20, 15, 5],
-                    backgroundColor: ['#22B57A', '#3B82F6', '#F5A623', '#EF4444'],
+                    data: {!! json_encode($statusBreakdown->pluck('percent')) !!},
+                    backgroundColor: ['#22B57A', '#EF4444', '#F5A623', '#6B7280'],
                     borderWidth: 0
                 }]
             },
