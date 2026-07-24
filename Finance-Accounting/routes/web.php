@@ -1,11 +1,9 @@
 <?php
-<<<<<<< HEAD:routes/web.php
+
 
 
 use App\Http\Controllers\Api\V1\AccountsPayable\AccountsPayableApiController;
-=======
 use App\Models\AccountReceivable\Reminder;
->>>>>>> df559247cea13dad1c9e7ba8fb183e7aab709ff6:Finance-Accounting/routes/web.php
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GeneralLedgerController;
 use App\Http\Controllers\AccountsPayableController;
@@ -28,10 +26,6 @@ Route::post('/account/switch-role', [AccountController::class, 'switchRole'])->n
 | Dashboard
 |--------------------------------------------------------------------------
 */
-
-Route::get('/', function () {
-    return view('dashboard.dashboard');
-})->name('dashboard');
 
 Route::get('/', [DashboardController::class, 'index'])
     ->name('dashboard');
