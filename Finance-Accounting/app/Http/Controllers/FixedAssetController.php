@@ -219,12 +219,35 @@ class FixedAssetController extends Controller
     }
 
     public function edit($id)
-    {
-        $asset = FixedAsset::findOrFail($id);
-        $categories = AssetCategory::all();
+{
+    $asset = FixedAsset::with('category')->findOrFail($id);
+    $categories = AssetCategory::all();
 
-        return view('fixed-assets.edit', compact('asset', 'categories'));
-    }
+    $statusMap = [
+        'active' => 'Active',
+        'disposed' => 'Disposed',
+        'under_maintenance' => 'Under Maintenance',
+        'fully_depreciated' => 'Fully Depreciated',
+    ];
+
+    $assetData = [
+        'asset_id' => $asset->asset_id,
+        'tag' => $asset->asset_tag,
+        'name' => $asset->asset_name,
+        'category' => $asset->category->category_name ?? 'Uncategorized',
+        'status' => $statusMap[$asset->status] ?? ucfirst($asset->status),
+        'purchase_date' => $asset->acquisition_date->format('M d, Y'),
+        'purchase_cost' => '₱' . number_format($asset->acquisition_cost, 2),
+        'useful_life' => $asset->useful_life_years . ' Year',
+        'location' => $asset->location ?? '-',
+        'condition' => $asset->condition ?? 'Good',
+        'serial_number' => $asset->serial_number ?? '-',
+        'warranty' => $asset->warranty_years ? $asset->warranty_years . ' Year(s)' : '-',
+        'description' => $asset->description ?? '-',
+    ];
+
+    return view('fixed-assets.edit', compact('asset', 'categories', 'assetData'));
+}
 
     public function update(Request $request, $id)
     {
