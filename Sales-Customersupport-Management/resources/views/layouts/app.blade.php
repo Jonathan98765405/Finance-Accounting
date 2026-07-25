@@ -42,7 +42,7 @@
             ['label' => 'Dashboard', 'route' => 'dashboard', 'icon' => 'grid'],
             ['label' => 'Customers', 'route' => 'customers.index', 'icon' => 'users'],
             ['label' => 'Sales Invoices', 'route' => 'sales-invoices.index', 'icon' => 'file'],
-            ['label' => 'API', 'route' => null, 'icon' => 'code', 'hidden' => true],
+           
         ];
     @endphp
 
