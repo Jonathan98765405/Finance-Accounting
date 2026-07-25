@@ -13,11 +13,13 @@ class SalesSyncService
 {
     protected string $baseUrl;
     protected string $token;
+    protected GeneralLedgerService $ledger;
 
-    public function __construct()
+    public function __construct(GeneralLedgerService $ledger)
     {
         $this->baseUrl = rtrim(config('services.sales.base_url'), '/');
         $this->token = config('services.sales.token');
+        $this->ledger = $ledger;
     }
 
     /**
@@ -168,6 +170,16 @@ class SalesSyncService
                         'amount' => $item['amount'],
                     ]);
                 }
+            }
+
+            // Keep the General Ledger in sync with invoices coming in from
+            // Sales, same as invoices created directly in Finance
+            // (Dr Accounts Receivable / Cr Sales Revenue). Without this,
+            // synced invoices never show up in the GL or trial balance.
+            if ($localInvoice->wasRecentlyCreated) {
+                $this->ledger->postInvoiceCreated($localInvoice);
+            } else {
+                $this->ledger->postInvoiceUpdated($localInvoice);
             }
 
             $count++;

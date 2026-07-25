@@ -29,7 +29,7 @@
                 {{-- Rendered by JS from data fetched per selected year --}}
             </div>
 
-            <div class="mt-6 flex items-center justify-between rounded-xl bg-navy px-5 py-4 text-white">
+            <div class="mt-1 flex items-center justify-between rounded-xl bg-navy px-5 py-4 text-white">
                 <span class="font-semibold">NET INCOME</span>
                 <span id="income-net-income" class="text-xl font-extrabold">₱0</span>
             </div>
@@ -37,7 +37,7 @@
 
         {{-- ============ BALANCE SHEETS ============ --}}
         <div class="xl:col-span-3">
-            <p class="text-sm font-bold text-navy mb-4">BALANCE SHEETS</p>
+            <p class="text-sm font-bold text-navy mt-7 mb-4">BALANCE SHEETS</p>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
 
@@ -221,19 +221,32 @@
         // ==========================================================================
         // Initialize and Wire Up Selects
         // ==========================================================================
+        const YEAR_SELECT_IDS = [
+            'income-year-select',
+            'assets-year-select',
+            'liabilities-year-select',
+            'equity-year-select',
+        ];
+
+        // All four selects share one dataset/fetch (there's only one "selected
+        // year" for this page), so keep them visually in sync whenever any one
+        // of them changes — otherwise the others keep showing the old year even
+        // though the data underneath has already moved on.
+        function syncYearSelects(year, exceptId) {
+            YEAR_SELECT_IDS.forEach(id => {
+                if (id === exceptId) return;
+                const el = document.getElementById(id);
+                if (el) el.value = year;
+            });
+        }
+
         loadYear(CURRENT_YEAR);
 
-        document.getElementById('income-year-select').addEventListener('change', function () {
-            loadYear(this.value);
-        });
-        document.getElementById('assets-year-select').addEventListener('change', function () {
-            loadYear(this.value);
-        });
-        document.getElementById('liabilities-year-select').addEventListener('change', function () {
-            loadYear(this.value);
-        });
-        document.getElementById('equity-year-select').addEventListener('change', function () {
-            loadYear(this.value);
+        YEAR_SELECT_IDS.forEach(id => {
+            document.getElementById(id).addEventListener('change', function () {
+                syncYearSelects(this.value, id);
+                loadYear(this.value);
+            });
         });
     </script>
 @endpush

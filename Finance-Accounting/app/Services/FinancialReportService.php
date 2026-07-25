@@ -431,10 +431,10 @@ class FinancialReportService
                 'expenses' => round($exp, 2),
                 'profit' => round($profit, 2),
                 'margin' => $rev != 0 ? round($profit / $rev * 100, 1) . '%' : '0.0%',
-                'compliance' => $audit->status ?? null,
-                'auditType' => $audit->audit_type ?? null,
-                'taxFiled' => ($audit->status ?? null) === 'Failed' ? 'No' : 'Yes',
-                'notes' => $audit->findings ?? null,
+                'compliance' => $audit ? $audit->status : 'No Audit',
+                'auditType' => $audit ? $audit->audit_type : null,
+                'taxFiled' => $audit && $audit->status === 'Failed' ? 'No' : 'Yes',
+                'notes' => $audit ? $audit->findings : null,
             ];
         }
 

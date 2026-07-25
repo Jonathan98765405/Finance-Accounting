@@ -80,23 +80,26 @@
                     <canvas id="complianceDonut"></canvas>
                     <div class="absolute inset-0 flex flex-col items-center justify-center">
                         <p class="text-xs text-slate-400">TOTAL AUDITS</p>
-                        <p id="compliance-total-audits" class="text-2xl font-extrabold text-navy">{{ $complianceDonut['total'] }}</p>
+                        <p id="compliance-total-audits" class="text-2xl font-extrabold text-navy">
+                            {{ $complianceDonut['total'] }}
+                        </p>
                     </div>
                 </div>
                 <div class="space-y-3 text-sm w-full">
                     <div class="flex items-center justify-between">
                         <span class="flex items-center gap-2"><i
                                 class="w-2.5 h-2.5 rounded-full bg-brand-green inline-block"></i> Complaint</span>
-                        <span id="compliance-complaint-pct" class="font-semibold">{{ $complianceDonut['complaint'] }}%</span>
+                        <span id="compliance-complaint-pct"
+                            class="font-semibold">{{ $complianceDonut['complaint'] }}%</span>
                     </div>
                     <div class="flex items-center justify-between">
                         <span class="flex items-center gap-2"><i
-                                class="w-2.5 h-2.5 rounded-full bg-navy-600 inline-block"></i> Pending</span>
+                                class="w-2.5 h-2.5 rounded-full bg-brand-orange inline-block"></i> Pending</span>
                         <span id="compliance-pending-pct" class="font-semibold">{{ $complianceDonut['pending'] }}%</span>
                     </div>
                     <div class="flex items-center justify-between">
                         <span class="flex items-center gap-2"><i
-                                class="w-2.5 h-2.5 rounded-full bg-brand-orange inline-block"></i> Failed</span>
+                                class="w-2.5 h-2.5 rounded-full bg-brand-red inline-block"></i> Failed</span>
                         <span id="compliance-failed-pct" class="font-semibold">{{ $complianceDonut['failed'] }}%</span>
                     </div>
                     <div class="flex justify-end pt-2">
@@ -186,15 +189,18 @@
         }
 
         function complianceBadgeClass(status) {
-            if (status === 'Passed') return 'text-brand-green';
+            if (status === 'Complaint') return 'text-brand-green';
+            if (status === 'Passed') return 'text-brand-green'; // optional
             if (status === 'Failed') return 'text-brand-red';
-            return 'text-brand-orange';
+            if (status === 'Pending') return 'text-brand-orange';
+
+            return 'text-slate-600';
         }
 
         const ACTIVITIES = @json($activities);
 
         async function loadOverviewYear(year) {
-            if (String(year) === String(CURRENT_YEAR)) return; 
+            if (String(year) === String(CURRENT_YEAR)) return;
 
             const res = await fetch(`{{ url('/financial-reports/overview/data') }}?year=${year}`, {
                 headers: { 'Accept': 'application/json' }
@@ -232,9 +238,10 @@
                 },
                 scales: {
                     y: {
-                        min: 0, max: 3000000,
+                        min: 0,
+                        suggestedMax: 3000000, // Replaced 'max' with 'suggestedMax' to allow upward scaling
                         ticks: {
-                            stepSize: 500000,
+                            // Removed 'stepSize: 500000' so Chart.js can auto-calculate ticks for higher values
                             callback: (v) => v === 0 ? '0' : (v / 1000000 >= 1 ? (v / 1000000) + 'M' : (v / 1000) + 'K'),
                             color: '#94a3b8', font: { size: 11 }
                         },
@@ -298,7 +305,11 @@
                         COMPLIANCE_DONUT[CURRENT_YEAR].pending,
                         COMPLIANCE_DONUT[CURRENT_YEAR].failed,
                     ],
-                    backgroundColor: ['#1FCB88', '#16265B', '#F5941F'],
+                    backgroundColor: [
+                        '#1FCB88', // brand-green (Complaint)
+                        '#F5941F', // brand-orange (Pending)
+                        '#EF4444', // brand-red (Failed) - replace with your brand red hex if different
+                    ],
                     borderWidth: 0,
                 }]
             },
@@ -328,88 +339,88 @@
             const body = document.getElementById('monthly-reports-preview-body');
             const rows = REPORTS[CURRENT_YEAR].slice(0, 3);
             body.innerHTML = rows.map((r, i) => `
-                            <tr>
-                              <td class="py-2.5 font-medium text-slate-700">${r.abbr}</td>
-                              <td class="py-2.5">${formatPHP(r.revenue)}</td>
-                              <td class="py-2.5">${formatPHP(r.expenses)}</td>
-                              <td class="py-2.5">${formatPHP(r.profit)}</td>
-                              <td class="py-2.5 font-semibold ${complianceBadgeClass(r.compliance)}">${r.compliance}</td>
-                              <td class="py-2.5"><button type="button" class="text-navy-600 font-medium hover:underline js-report-view" data-year="${CURRENT_YEAR}" data-index="${i}">View</button></td>
-                            </tr>
-                          `).join('');
+                                        <tr>
+                                          <td class="py-2.5 font-medium text-slate-700">${r.abbr}</td>
+                                          <td class="py-2.5">${formatPHP(r.revenue)}</td>
+                                          <td class="py-2.5">${formatPHP(r.expenses)}</td>
+                                          <td class="py-2.5">${formatPHP(r.profit)}</td>
+                                          <td class="py-2.5 font-semibold ${complianceBadgeClass(r.compliance)}">${r.compliance}</td>
+                                          <td class="py-2.5"><button type="button" class="text-navy-600 font-medium hover:underline js-report-view" data-year="${CURRENT_YEAR}" data-index="${i}">View</button></td>
+                                        </tr>
+                                      `).join('');
         }
         renderPreviewReports();
 
         function openReportDetailModal(year, index) {
             const r = REPORTS[year][index];
             const rowsHtml = `
-                            <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Period</span><span class="text-sm font-semibold text-navy">${r.month} ${r.year}</span></div>
-                            <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Revenue</span><span class="text-sm font-semibold text-navy">${formatPHP(r.revenue)}</span></div>
-                            <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Expenses</span><span class="text-sm font-semibold text-navy">${formatPHP(r.expenses)}</span></div>
-                            <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Net Profit</span><span class="text-sm font-semibold text-navy">${formatPHP(r.profit)}</span></div>
-                            <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Profit Margin</span><span class="text-sm font-semibold text-navy">${r.margin}</span></div>
-                            <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Compliance Status</span><span class="text-sm font-semibold ${complianceBadgeClass(r.compliance)}">${r.compliance}</span></div>
-                            <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Audit Type</span><span class="text-sm font-semibold text-navy">${r.auditType}</span></div>
-                            <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Tax Filed</span><span class="text-sm font-semibold text-navy">${r.taxFiled}</span></div>
-                            <div class="py-2"><span class="text-sm text-slate-500 block mb-1">Notes</span><span class="text-sm text-slate-700">${r.notes}</span></div>
-                          `;
+                                        <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Period</span><span class="text-sm font-semibold text-navy">${r.month} ${r.year}</span></div>
+                                        <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Revenue</span><span class="text-sm font-semibold text-navy">${formatPHP(r.revenue)}</span></div>
+                                        <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Expenses</span><span class="text-sm font-semibold text-navy">${formatPHP(r.expenses)}</span></div>
+                                        <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Net Profit</span><span class="text-sm font-semibold text-navy">${formatPHP(r.profit)}</span></div>
+                                        <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Profit Margin</span><span class="text-sm font-semibold text-navy">${r.margin}</span></div>
+                                        <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Compliance Status</span><span class="text-sm font-semibold ${complianceBadgeClass(r.compliance)}">${r.compliance}</span></div>
+                                        <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Audit Type</span><span class="text-sm font-semibold text-navy">${r.auditType}</span></div>
+                                        <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Tax Filed</span><span class="text-sm font-semibold text-navy">${r.taxFiled}</span></div>
+                                        <div class="py-2"><span class="text-sm text-slate-500 block mb-1">Notes</span><span class="text-sm text-slate-700">${r.notes}</span></div>
+                                      `;
 
             AppUI.openModal(`
-                            <h3 class="text-lg font-bold text-navy mb-1">${r.month} ${r.year} Report</h3>
-                            <p class="text-sm text-slate-500 mb-4">Full financial and compliance breakdown for this period.</p>
-                            <div>${rowsHtml}</div>
-                            <div class="flex justify-end pt-5">
-                              <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700">Close</button>
-                            </div>
-                          `);
+                                        <h3 class="text-lg font-bold text-navy mb-1">${r.month} ${r.year} Report</h3>
+                                        <p class="text-sm text-slate-500 mb-4">Full financial and compliance breakdown for this period.</p>
+                                        <div>${rowsHtml}</div>
+                                        <div class="flex justify-end pt-5">
+                                          <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700">Close</button>
+                                        </div>
+                                      `);
         }
 
         function renderAllReportsTable(year) {
             const rows = REPORTS[year];
             return `
-                            <table class="w-full text-sm">
-                              <thead>
-                                <tr class="text-slate-400 text-left">
-                                  <th class="font-medium pb-2">Month</th>
-                                  <th class="font-medium pb-2">Revenue</th>
-                                  <th class="font-medium pb-2">Expenses</th>
-                                  <th class="font-medium pb-2">Profit</th>
-                                  <th class="font-medium pb-2">Compliance</th>
-                                  <th class="font-medium pb-2">Details</th>
-                                </tr>
-                              </thead>
-                              <tbody class="divide-y divide-slate-100">
-                                ${rows.map((r, i) => `
-                                  <tr>
-                                    <td class="py-2.5 font-medium text-slate-700">${r.month}</td>
-                                    <td class="py-2.5">${formatPHP(r.revenue)}</td>
-                                    <td class="py-2.5">${formatPHP(r.expenses)}</td>
-                                    <td class="py-2.5">${formatPHP(r.profit)}</td>
-                                    <td class="py-2.5 font-semibold ${complianceBadgeClass(r.compliance)}">${r.compliance}</td>
-                                    <td class="py-2.5"><button type="button" class="text-navy-600 font-medium hover:underline js-report-view" data-year="${year}" data-index="${i}">View</button></td>
-                                  </tr>
-                                `).join('')}
-                              </tbody>
-                            </table>
-                          `;
+                                        <table class="w-full text-sm">
+                                          <thead>
+                                            <tr class="text-slate-400 text-left">
+                                              <th class="font-medium pb-2">Month</th>
+                                              <th class="font-medium pb-2">Revenue</th>
+                                              <th class="font-medium pb-2">Expenses</th>
+                                              <th class="font-medium pb-2">Profit</th>
+                                              <th class="font-medium pb-2">Compliance</th>
+                                              <th class="font-medium pb-2">Details</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody class="divide-y divide-slate-100">
+                                            ${rows.map((r, i) => `
+                                              <tr>
+                                                <td class="py-2.5 font-medium text-slate-700">${r.month}</td>
+                                                <td class="py-2.5">${formatPHP(r.revenue)}</td>
+                                                <td class="py-2.5">${formatPHP(r.expenses)}</td>
+                                                <td class="py-2.5">${formatPHP(r.profit)}</td>
+                                                <td class="py-2.5 font-semibold ${complianceBadgeClass(r.compliance)}">${r.compliance}</td>
+                                                <td class="py-2.5"><button type="button" class="text-navy-600 font-medium hover:underline js-report-view" data-year="${year}" data-index="${i}">View</button></td>
+                                              </tr>
+                                            `).join('')}
+                                          </tbody>
+                                        </table>
+                                      `;
         }
 
         function openAllReportsModal() {
             AppUI.openModal(`
-                            <div class="flex items-start justify-between gap-4 mb-1 pr-10">
-                              <h3 class="text-lg font-bold text-navy">All Monthly Reports</h3>
-                              <select id="all-reports-year-select" class="shrink-0 border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-navy-600/30">
-                                ${yearOptionsHtml(CURRENT_YEAR)}
-                              </select>
-                            </div>
-                            <p class="text-sm text-slate-500 mb-4">January – December, filtered by year.</p>
-                            <div id="all-reports-table-wrap" class="max-h-[26rem] overflow-y-auto pr-1">
-                              ${renderAllReportsTable(CURRENT_YEAR)}
-                            </div>
-                            <div class="flex justify-end pt-5">
-                              <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700">Close</button>
-                            </div>
-                          `, 'lg');
+                                        <div class="flex items-start justify-between gap-4 mb-1 pr-10">
+                                          <h3 class="text-lg font-bold text-navy">All Monthly Reports</h3>
+                                          <select id="all-reports-year-select" class="shrink-0 border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-navy-600/30">
+                                            ${yearOptionsHtml(CURRENT_YEAR)}
+                                          </select>
+                                        </div>
+                                        <p class="text-sm text-slate-500 mb-4">January – December, filtered by year.</p>
+                                        <div id="all-reports-table-wrap" class="max-h-[26rem] overflow-y-auto pr-1">
+                                          ${renderAllReportsTable(CURRENT_YEAR)}
+                                        </div>
+                                        <div class="flex justify-end pt-5">
+                                          <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700">Close</button>
+                                        </div>
+                                      `, 'lg');
 
             document.getElementById('all-reports-year-select').addEventListener('change', async function () {
                 await loadOverviewYear(this.value);
@@ -429,21 +440,21 @@
             const list = document.getElementById('recent-activities-list');
 
             list.innerHTML = ACTIVITIES.slice(0, 4).map(a => `
-                <div class="flex items-center justify-between gap-3">
-                    <span class="flex items-center gap-2">
-                        <i data-lucide="${a.icon}" class="w-4 h-4 ${a.iconColor}"></i>
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="flex items-center gap-2">
+                                    <i data-lucide="${a.icon}" class="w-4 h-4 ${a.iconColor}"></i>
 
-                        <span class="flex items-center gap-1">
-                            <i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i>
-                            ${a.title}
-                        </span>
-                    </span>
+                                    <span class="flex items-center gap-1">
+                                        <i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i>
+                                        ${a.title}
+                                    </span>
+                                </span>
 
-                    <span class="text-xs font-medium ${a.color}">
-                        ${a.when}
-                    </span>
-                </div>
-            `).join('');
+                                <span class="text-xs font-medium ${a.color}">
+                                    ${a.when}
+                                </span>
+                            </div>
+                        `).join('');
 
             if (typeof lucide !== 'undefined') lucide.createIcons();
         }
@@ -451,44 +462,44 @@
 
         function openAllActivitiesModal() {
             const rowsHtml = ACTIVITIES.map(a => `
-                <div class="flex items-start justify-between gap-3 py-3 border-b border-slate-100 last:border-0">
-                    <div class="flex items-start gap-3">
-                        <i data-lucide="${a.icon}" class="w-4 h-4 mt-0.5 ${a.iconColor}"></i>
+                            <div class="flex items-start justify-between gap-3 py-3 border-b border-slate-100 last:border-0">
+                                <div class="flex items-start gap-3">
+                                    <i data-lucide="${a.icon}" class="w-4 h-4 mt-0.5 ${a.iconColor}"></i>
 
-                        <div>
-                            <p class="text-sm font-medium text-slate-700 flex items-center gap-2">
-                                <i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i>
-                                <span>${a.title}</span>
-                            </p>
+                                    <div>
+                                        <p class="text-sm font-medium text-slate-700 flex items-center gap-2">
+                                            <i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i>
+                                            <span>${a.title}</span>
+                                        </p>
 
-                            <p class="text-xs text-slate-400 mt-0.5">${a.type}</p>
-                            <p class="text-xs text-slate-500 mt-1">${a.notes}</p>
-                        </div>
-                    </div>
+                                        <p class="text-xs text-slate-400 mt-0.5">${a.type}</p>
+                                        <p class="text-xs text-slate-500 mt-1">${a.notes}</p>
+                                    </div>
+                                </div>
 
-                    <span class="text-xs font-semibold ${a.color} whitespace-nowrap">
-                        ${a.when}
-                    </span>
-                </div>
-            `).join('');
+                                <span class="text-xs font-semibold ${a.color} whitespace-nowrap">
+                                    ${a.when}
+                                </span>
+                            </div>
+                        `).join('');
 
             AppUI.openModal(`
-                <h3 class="text-lg font-bold text-navy mb-1">All Compliance Activities</h3>
-                <p class="text-sm text-slate-500 mb-2">${ACTIVITIES.length} recorded activities.</p>
+                            <h3 class="text-lg font-bold text-navy mb-1">All Compliance Activities</h3>
+                            <p class="text-sm text-slate-500 mb-2">${ACTIVITIES.length} recorded activities.</p>
 
-                <div class="max-h-[26rem] overflow-y-auto pr-1">
-                    ${rowsHtml}
-                </div>
+                            <div class="max-h-[26rem] overflow-y-auto pr-1">
+                                ${rowsHtml}
+                            </div>
 
-                <div class="flex justify-end pt-5">
-                    <button
-                        type="button"
-                        onclick="AppUI.closeModal()"
-                        class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700">
-                        Close
-                    </button>
-                </div>
-            `, 'lg');
+                            <div class="flex justify-end pt-5">
+                                <button
+                                    type="button"
+                                    onclick="AppUI.closeModal()"
+                                    class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700">
+                                    Close
+                                </button>
+                            </div>
+                        `, 'lg');
 
             if (typeof lucide !== 'undefined') lucide.createIcons();
         }
@@ -501,48 +512,48 @@
                 return '<p class="text-sm text-slate-400 py-6 text-center">No audit records for this year.</p>';
             }
             return `
-                            <table class="w-full text-sm">
-                              <thead>
-                                <tr class="text-slate-400 text-left">
-                                  <th class="font-medium pb-2">Date</th>
-                                  <th class="font-medium pb-2">Audit Type</th>
-                                  <th class="font-medium pb-2">Auditor</th>
-                                  <th class="font-medium pb-2">Status</th>
-                                  <th class="font-medium pb-2">Details</th>
-                                </tr>
-                              </thead>
-                              <tbody class="divide-y divide-slate-100">
-                                ${rows.map(a => `
-                                  <tr>
-                                    <td class="py-2.5 font-medium text-slate-700">${a.date ?? `${a.month} ${a.year}`}</td>
-                                    <td class="py-2.5">${a.auditType}</td>
-                                    <td class="py-2.5">${a.auditor}</td>
-                                    <td class="py-2.5 font-semibold ${auditBadgeClass(a.status)}">${a.status}</td>
-                                    <td class="py-2.5"><button type="button" class="text-navy-600 font-medium hover:underline js-audit-view" data-id="${a.id}">View</button></td>
-                                  </tr>
-                                `).join('')}
-                              </tbody>
-                            </table>
-                          `;
+                                        <table class="w-full text-sm">
+                                          <thead>
+                                            <tr class="text-slate-400 text-left">
+                                              <th class="font-medium pb-2">Date</th>
+                                              <th class="font-medium pb-2">Audit Type</th>
+                                              <th class="font-medium pb-2">Auditor</th>
+                                              <th class="font-medium pb-2">Status</th>
+                                              <th class="font-medium pb-2">Details</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody class="divide-y divide-slate-100">
+                                            ${rows.map(a => `
+                                              <tr>
+                                                <td class="py-2.5 font-medium text-slate-700">${a.date ?? `${a.month} ${a.year}`}</td>
+                                                <td class="py-2.5">${a.auditType}</td>
+                                                <td class="py-2.5">${a.auditor}</td>
+                                                <td class="py-2.5 font-semibold ${auditBadgeClass(a.status)}">${a.status}</td>
+                                                <td class="py-2.5"><button type="button" class="text-navy-600 font-medium hover:underline js-audit-view" data-id="${a.id}">View</button></td>
+                                              </tr>
+                                            `).join('')}
+                                          </tbody>
+                                        </table>
+                                      `;
         }
 
         function openAuditHistoryModal() {
             AppUI.openModal(`
-                            <div class="flex items-start justify-between gap-4 mb-1 pr-10">
-                              <h3 class="text-lg font-bold text-navy">Audit History</h3>
-                              <select id="audit-history-year-select" class="shrink-0 border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-navy-600/30">
-                                <option value="all">All Years</option>
-                                ${yearOptionsHtml(CURRENT_YEAR)}
-                              </select>
-                            </div>
-                            <p class="text-sm text-slate-500 mb-4">Complete record of internal, external, regulatory and financial audits.</p>
-                            <div id="audit-history-table-wrap" class="max-h-[26rem] overflow-y-auto pr-1">
-                              ${renderAuditHistoryTable(CURRENT_YEAR)}
-                            </div>
-                            <div class="flex justify-end pt-5">
-                              <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700">Close</button>
-                            </div>
-                          `, 'lg');
+                                        <div class="flex items-start justify-between gap-4 mb-1 pr-10">
+                                          <h3 class="text-lg font-bold text-navy">Audit History</h3>
+                                          <select id="audit-history-year-select" class="shrink-0 border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-navy-600/30">
+                                            <option value="all">All Years</option>
+                                            ${yearOptionsHtml(CURRENT_YEAR)}
+                                          </select>
+                                        </div>
+                                        <p class="text-sm text-slate-500 mb-4">Complete record of internal, external, regulatory and financial audits.</p>
+                                        <div id="audit-history-table-wrap" class="max-h-[26rem] overflow-y-auto pr-1">
+                                          ${renderAuditHistoryTable(CURRENT_YEAR)}
+                                        </div>
+                                        <div class="flex justify-end pt-5">
+                                          <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700">Close</button>
+                                        </div>
+                                      `, 'lg');
 
             document.getElementById('audit-history-year-select').addEventListener('change', async function () {
                 const val = this.value;
@@ -568,26 +579,26 @@
             const a = AUDITS[idx];
 
             const rowsHtml = `
-                            <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Date</span><span class="text-sm font-semibold text-navy">${a.date ?? `${a.month} ${a.year}`}</span></div>
-                            <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Audit Type</span><span class="text-sm font-semibold text-navy">${a.auditType}</span></div>
-                            <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Auditor</span><span class="text-sm font-semibold text-navy">${a.auditor}</span></div>
-                            <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Status</span><span class="text-sm font-semibold ${auditBadgeClass(a.status)}">${a.status}</span></div>
-                            <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Date Completed</span><span class="text-sm font-semibold text-navy">${a.dateCompleted}</span></div>
-                            <div class="py-2"><span class="text-sm text-slate-500 block mb-1">Findings</span><span class="text-sm text-slate-700">${a.findings}</span></div>
-                          `;
+                                        <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Date</span><span class="text-sm font-semibold text-navy">${a.date ?? `${a.month} ${a.year}`}</span></div>
+                                        <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Audit Type</span><span class="text-sm font-semibold text-navy">${a.auditType}</span></div>
+                                        <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Auditor</span><span class="text-sm font-semibold text-navy">${a.auditor}</span></div>
+                                        <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Status</span><span class="text-sm font-semibold ${auditBadgeClass(a.status)}">${a.status}</span></div>
+                                        <div class="flex items-center justify-between py-2 border-b border-slate-100"><span class="text-sm text-slate-500">Date Completed</span><span class="text-sm font-semibold text-navy">${a.dateCompleted}</span></div>
+                                        <div class="py-2"><span class="text-sm text-slate-500 block mb-1">Findings</span><span class="text-sm text-slate-700">${a.findings}</span></div>
+                                      `;
 
             AppUI.openModal(`
-                            <h3 class="text-lg font-bold text-navy mb-1">${a.auditType} Audit — ${a.month} ${a.year}</h3>
-                            <p class="text-sm text-slate-500 mb-4">Full audit record.</p>
-                            <div>${rowsHtml}</div>
-                            <div class="flex justify-between items-center pt-5">
-                              <button type="button" class="js-audit-delete rounded-xl px-5 py-2.5 text-sm font-semibold text-brand-red border border-brand-red/30 hover:bg-brand-red/5" data-id="${a.id}">Delete</button>
-                              <div class="flex gap-2">
-                                <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50">Close</button>
-                                <button type="button" class="js-audit-edit rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700" data-id="${a.id}">Edit Information</button>
-                              </div>
-                            </div>
-                          `);
+                                        <h3 class="text-lg font-bold text-navy mb-1">${a.auditType} Audit — ${a.month} ${a.year}</h3>
+                                        <p class="text-sm text-slate-500 mb-4">Full audit record.</p>
+                                        <div>${rowsHtml}</div>
+                                        <div class="flex justify-between items-center pt-5">
+                                          <button type="button" class="js-audit-delete rounded-xl px-5 py-2.5 text-sm font-semibold text-brand-red border border-brand-red/30 hover:bg-brand-red/5" data-id="${a.id}">Delete</button>
+                                          <div class="flex gap-2">
+                                            <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50">Close</button>
+                                            <button type="button" class="js-audit-edit rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700" data-id="${a.id}">Edit Information</button>
+                                          </div>
+                                        </div>
+                                      `);
         }
 
         function openAuditEditModal(id) {
@@ -599,40 +610,40 @@
             const statusOptions = ['Complaint', 'Pending', 'Failed'].map(s => `<option value="${s}" ${s === a.status ? 'selected' : ''}>${s}</option>`).join('');
 
             AppUI.openModal(`
-                            <h3 class="text-lg font-bold text-navy mb-1">Edit Audit — ${a.month} ${a.year}</h3>
-                            <p class="text-sm text-slate-500 mb-4">Update the audit record details below.</p>
-                            <form id="audit-edit-form" class="space-y-3">
-                              <div>
-                                <label class="block text-xs font-semibold text-slate-500 mb-1">Audit Type</label>
-                                <select name="auditType" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-600/30">
-                                  ${auditTypeOptions}
-                                </select>
-                              </div>
-                              <div>
-                                <label class="block text-xs font-semibold text-slate-500 mb-1">Auditor</label>
-                                <input type="text" name="auditor" value="${a.auditor}" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-600/30" />
-                              </div>
-                              <div>
-                                <label class="block text-xs font-semibold text-slate-500 mb-1">Status</label>
-                                <select name="status" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-600/30">
-                                  ${statusOptions}
-                                </select>
-                              </div>
-                              <div>
-                                <label class="block text-xs font-semibold text-slate-500 mb-1">Date Completed</label>
-                                <input type="date" name="dateCompleted" value="${a.dateCompleted}" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-600/30" />
-                              </div>
-                              <div>
-                                <label class="block text-xs font-semibold text-slate-500 mb-1">Findings</label>
-                                <textarea name="findings" rows="3" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-600/30">${a.findings ?? ''}</textarea>
-                              </div>
-                            </form>
-                            <p id="audit-edit-error" class="text-sm text-brand-red hidden mt-2"></p>
-                            <div class="flex justify-end gap-2 pt-5">
-                              <button type="button" onclick="openAuditDetailModal(${a.id})" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50">Cancel</button>
-                              <button type="button" id="audit-edit-save" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700">Save Changes</button>
-                            </div>
-                          `);
+                                        <h3 class="text-lg font-bold text-navy mb-1">Edit Audit — ${a.month} ${a.year}</h3>
+                                        <p class="text-sm text-slate-500 mb-4">Update the audit record details below.</p>
+                                        <form id="audit-edit-form" class="space-y-3">
+                                          <div>
+                                            <label class="block text-xs font-semibold text-slate-500 mb-1">Audit Type</label>
+                                            <select name="auditType" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-600/30">
+                                              ${auditTypeOptions}
+                                            </select>
+                                          </div>
+                                          <div>
+                                            <label class="block text-xs font-semibold text-slate-500 mb-1">Auditor</label>
+                                            <input type="text" name="auditor" value="${a.auditor}" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-600/30" />
+                                          </div>
+                                          <div>
+                                            <label class="block text-xs font-semibold text-slate-500 mb-1">Status</label>
+                                            <select name="status" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-600/30">
+                                              ${statusOptions}
+                                            </select>
+                                          </div>
+                                          <div>
+                                            <label class="block text-xs font-semibold text-slate-500 mb-1">Date Completed</label>
+                                            <input type="date" name="dateCompleted" value="${a.dateCompleted}" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-600/30" />
+                                          </div>
+                                          <div>
+                                            <label class="block text-xs font-semibold text-slate-500 mb-1">Findings</label>
+                                            <textarea name="findings" rows="3" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-600/30">${a.findings ?? ''}</textarea>
+                                          </div>
+                                        </form>
+                                        <p id="audit-edit-error" class="text-sm text-brand-red hidden mt-2"></p>
+                                        <div class="flex justify-end gap-2 pt-5">
+                                          <button type="button" onclick="openAuditDetailModal(${a.id})" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50">Cancel</button>
+                                          <button type="button" id="audit-edit-save" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700">Save Changes</button>
+                                        </div>
+                                      `);
 
             document.getElementById('audit-edit-save').addEventListener('click', function () {
                 const form = document.getElementById('audit-edit-form');
@@ -788,7 +799,7 @@
 
                 const historyWrap = document.getElementById('audit-history-table-wrap');
                 const historyYearSelect = document.getElementById('audit-history-year-select');
-                
+
                 if (historyWrap && historyYearSelect) {
                     if (historyYearSelect.value === 'all') {
                         historyWrap.innerHTML = renderAuditHistoryTable('all', Object.values(AUDITS_CACHE).flat());

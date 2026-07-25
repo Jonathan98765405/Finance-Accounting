@@ -210,7 +210,6 @@
               <option value="balance_sheet">Balance Sheet</option>
               <option value="cash_flow">Cash Flow Statement</option>
               <option value="tax_summary">Tax Summary</option>
-              <option value="budget_actual">Budget vs Actual</option>
               <option value="full_compliance">Full Compliance Report</option>
             </select>
           </div>
@@ -229,7 +228,9 @@
                         .map((m, i) => `<option value="${i + 1}" ${i === 5 ? 'selected' : ''}>${m}</option>`).join('')}
               </select>
               <select name="year" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm">
-                <option selected>2026</option>
+                @foreach ($years as $y)
+                  <option value="{{ $y }}" @selected($y == $selectedYear)>{{ $y }}</option>
+                @endforeach
               </select>
             </div>
 
@@ -246,7 +247,9 @@
 
             <div id="period-ytd-fields" class="hidden">
               <select name="ytd_year" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm">
-                <option>2024</option><option>2025</option><option selected>2026</option>
+                @foreach ($years as $y)
+                  <option value="{{ $y }}" @selected($y == $selectedYear)>{{ $y }}</option>
+                @endforeach
               </select>
             </div>
           </div>
@@ -266,29 +269,31 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1.5">Format</label>
-              <div class="flex flex-wrap gap-4 text-sm text-slate-600">
-                <label class="flex items-center gap-2"><input type="radio" name="format" value="pdf" checked> PDF</label>
-                <label class="flex items-center gap-2"><input type="radio" name="format" value="excel"> Excel</label>
-                <label class="flex items-center gap-2"><input type="radio" name="format" value="both"> Both</label>
-              </div>
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1.5">Delivery</label>
-              <div class="flex flex-wrap gap-4 text-sm text-slate-600">
-                <label class="flex items-center gap-2"><input type="radio" name="delivery" value="download" class="js-delivery" checked> Download now</label>
-                <label class="flex items-center gap-2"><input type="radio" name="delivery" value="email" class="js-delivery"> Email it</label>
-              </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Format</label>
+            <div class="flex flex-wrap gap-4 text-sm text-slate-600">
+              <label class="flex items-center gap-2"><input type="radio" name="format" value="pdf" class="js-report-format" checked> PDF</label>
+              <label class="flex items-center gap-2"><input type="radio" name="format" value="excel" class="js-report-format"> Excel</label>
+              <label class="flex items-center gap-2"><input type="radio" name="format" value="both" class="js-report-format"> Both</label>
             </div>
           </div>
 
-          <div id="delivery-email-field" class="hidden">
-            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Recipient Email(s)</label>
-            <input type="text" name="recipients" placeholder="finance@company.com, cfo@company.com"
-                   class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy-600/30">
-            <p class="text-xs text-slate-400 mt-1">Separate multiple addresses with commas.</p>
+          <div id="report-pdf-options" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1.5">Page Size</label>
+              <select name="page_size" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm">
+                <option value="A4">A4</option>
+                <option value="Letter" selected>Letter</option>
+                <option value="Legal">Legal</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1.5">Orientation</label>
+              <select name="orientation" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm">
+                <option value="portrait" selected>Portrait</option>
+                <option value="landscape">Landscape</option>
+              </select>
+            </div>
           </div>
 
           <p id="generate-report-error" class="text-sm text-brand-red hidden"></p>
@@ -301,6 +306,16 @@
       `, 'lg');
 
                 const form = document.getElementById('generate-report-form');
+
+                const pdfOptions = document.getElementById('report-pdf-options');
+                function syncPdfOptionsVisibility() {
+                    const format = form.querySelector('input[name="format"]:checked').value;
+                    pdfOptions.classList.toggle('hidden', format === 'excel');
+                }
+                form.querySelectorAll('.js-report-format').forEach((radio) => {
+                    radio.addEventListener('change', syncPdfOptionsVisibility);
+                });
+                syncPdfOptionsVisibility();
 
                 const periodGroups = {
                     month: document.getElementById('period-month-fields'),
@@ -315,15 +330,6 @@
                     });
                 });
 
-                const emailField = document.getElementById('delivery-email-field');
-                form.querySelectorAll('.js-delivery').forEach((radio) => {
-                    radio.addEventListener('change', () => {
-                        emailField.classList.toggle('hidden', radio.value !== 'email');
-                        const input = emailField.querySelector('input');
-                        input.required = radio.value === 'email';
-                    });
-                });
-
                 const sectionChecks = form.querySelectorAll('.js-section-check');
                 const toggleAllBtn = document.getElementById('sections-toggle-all');
                 toggleAllBtn.addEventListener('click', () => {
@@ -332,20 +338,13 @@
                     toggleAllBtn.textContent = allChecked ? 'Select all' : 'Clear all';
                 });
 
-                form.addEventListener('submit', function (e) {
+                form.addEventListener('submit', async function (e) {
                     e.preventDefault();
                     const errorEl = document.getElementById('generate-report-error');
                     const checkedSections = form.querySelectorAll('.js-section-check:checked');
-                    const deliveryEmail = form.querySelector('input[name="delivery"]:checked').value === 'email';
-                    const recipients = form.recipients.value.trim();
 
                     if (checkedSections.length === 0) {
                         errorEl.textContent = 'Select at least one section to include in the report.';
-                        errorEl.classList.remove('hidden');
-                        return;
-                    }
-                    if (deliveryEmail && !recipients) {
-                        errorEl.textContent = 'Enter at least one recipient email address.';
                         errorEl.classList.remove('hidden');
                         return;
                     }
@@ -358,31 +357,213 @@
                     const payload = Object.fromEntries(new FormData(form).entries());
                     payload.sections = Array.from(checkedSections).map((c) => c.value);
 
-                    setTimeout(() => {
-                        AppUI.closeModal();
-                        AppUI.showToast(
-                            payload.delivery === 'email'
-                                ? `Report generated and sent to ${payload.recipients}.`
-                                : 'Report generated — your download will start shortly.',
-                            'success'
-                        );
+                    const reportType = payload.report_type;
+                    const info = REPORT_TYPE_INFO[reportType];
+                    const year = payload.period_mode === 'ytd'
+                        ? (payload.ytd_year || {{ $selectedYear }})
+                        : (payload.year || {{ $selectedYear }});
 
-                        if (payload.delivery !== 'email') {
-                            const blob = new Blob(
-                                [`Report Type: ${payload.report_type}\nSections: ${payload.sections.join(', ')}\nFormat: ${payload.format}`],
-                                { type: 'text/plain' }
-                            );
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = `${payload.report_type}-${new Date().toISOString().slice(0, 10)}.txt`;
-                            document.body.appendChild(a);
-                            a.click();
-                            a.remove();
-                            URL.revokeObjectURL(url);
+                    try {
+                        if (!info.source) {
+                            AppUI.closeModal();
+                            AppUI.showToast(`${info.label} isn't available yet — that report page hasn't been built.`, 'error');
+                            return;
                         }
-                    }, 700);
+
+                        const sourceData = await fetchReportSourceData(info.source, year);
+                        const tables = buildReportTables(reportType, sourceData, year);
+
+                        if (tables.length === 0) {
+                            AppUI.showToast('No data was found for that report type and period.', 'error');
+                            return;
+                        }
+
+                        AppUI.closeModal();
+
+                        // Reuses the same, already-working export mechanisms behind
+                        // the standalone Export PDF / Export Excel buttons, but built
+                        // from the real data for the chosen report type — not whatever
+                        // happens to be on the currently open page.
+                        if (payload.format === 'pdf' || payload.format === 'both') {
+                            printReportTables(
+                                `${info.label} — ${year}`,
+                                reportTablesToHtml(tables),
+                                payload.page_size || 'Letter',
+                                payload.orientation || 'portrait'
+                            );
+                        }
+
+                        if (payload.format === 'excel' || payload.format === 'both') {
+                            const dateStamp = new Date().toISOString().slice(0, 10);
+                            downloadBlob(reportTablesToCsv(tables), `${reportType}-${year}-${dateStamp}.csv`);
+                            AppUI.showToast('CSV file downloaded.', 'success');
+                        }
+                    } catch (err) {
+                        AppUI.showToast(err.message || 'Failed to generate report.', 'error');
+                    } finally {
+                        btn.disabled = false;
+                        btn.textContent = 'Generate Report';
+                    }
                 });
+            }
+
+            // ==========================================================
+            // Report-type -> data-source mapping and table builders.
+            // Fetches from the same JSON endpoints each report page uses
+            // for its own year switcher, so Generate Report always pulls
+            // the real data for the chosen type, no matter which page
+            // (Overview / Income & Balance / Cash Flow & Tax) is open.
+            // ==========================================================
+            const REPORT_TYPE_INFO = {
+                income_statement: { label: 'Income Statement', source: 'income-balance' },
+                balance_sheet: { label: 'Balance Sheet', source: 'income-balance' },
+                cash_flow: { label: 'Cash Flow Statement', source: 'cashflow-tax' },
+                tax_summary: { label: 'Tax Summary', source: 'cashflow-tax' },
+                budget_actual: { label: 'Budget vs Actual', source: null },
+                full_compliance: { label: 'Full Compliance Report', source: 'overview' },
+            };
+
+            const REPORT_SOURCE_URLS = {
+                'income-balance': `{{ url('/financial-reports/income-balance/data') }}`,
+                'cashflow-tax': `{{ url('/financial-reports/cashflow-tax/data') }}`,
+                'overview': `{{ url('/financial-reports/overview/data') }}`,
+            };
+
+            async function fetchReportSourceData(source, year) {
+                const res = await fetch(`${REPORT_SOURCE_URLS[source]}?year=${year}`, {
+                    headers: { 'Accept': 'application/json' },
+                });
+                if (!res.ok) throw new Error('Failed to load data for that report.');
+                return res.json();
+            }
+
+            function formatReportPHP(n) {
+                const num = Number(n) || 0;
+                return (num < 0 ? '-₱' : '₱') + Math.abs(Math.round(num)).toLocaleString();
+            }
+
+            function buildReportTables(reportType, data, year) {
+                switch (reportType) {
+                    case 'income_statement': {
+                        const stmt = data.incomeStatement;
+                        const rows = [['Line Item', 'Amount']];
+                        stmt.groups.forEach((group) => {
+                            rows.push([group.label, formatReportPHP(group.amount)]);
+                            group.lines.forEach(([label, amount]) => rows.push(['  ' + label, formatReportPHP(amount)]));
+                        });
+                        stmt.subtotals.forEach(([label, amount]) => rows.push([label, formatReportPHP(amount)]));
+                        rows.push(['NET INCOME', formatReportPHP(stmt.netIncome)]);
+                        return [{ title: `Income Statement — ${year}`, rows }];
+                    }
+                    case 'balance_sheet': {
+                        const bs = data.balanceSheet;
+                        return ['assets', 'liabilities', 'equity'].map((key) => {
+                            const section = bs[key];
+                            const rows = [['Line Item', 'Amount']];
+                            section.lines.forEach(([label, amount]) => rows.push([label, formatReportPHP(amount)]));
+                            rows.push([section.title, formatReportPHP(section.total)]);
+                            return { title: `${section.title} — ${year}`, rows };
+                        });
+                    }
+                    case 'cash_flow': {
+                        const rows = [['Month', 'Operating', 'Investing', 'Financing', 'Net']];
+                        data.cashflowMonthly.forEach((m) => {
+                            rows.push([m.month, formatReportPHP(m.operating), formatReportPHP(m.investing), formatReportPHP(m.financing), formatReportPHP(m.net)]);
+                        });
+                        return [{ title: `Cash Flow Statement — ${year}`, rows }];
+                    }
+                    case 'tax_summary': {
+                        const ts = data.taxSummary;
+                        const summaryRows = [
+                            ['Metric', 'Value'],
+                            ['Total Due', formatReportPHP(ts.totalDue)],
+                            ['Filed YTD', formatReportPHP(ts.filedYtd)],
+                            ['Pending Filings', ts.pendingFilings],
+                        ];
+                        const calcRows = [['Type', 'Rate', 'Taxable Amount', 'Amount Due', 'Deadline', 'Status']];
+                        (data.taxCalculation || []).forEach((t) => {
+                            calcRows.push([t.type, t.rate, formatReportPHP(t.taxableAmount), formatReportPHP(t.amountDue), t.deadline, t.status]);
+                        });
+                        return [
+                            { title: `Tax Summary — ${year}`, rows: summaryRows },
+                            { title: `Tax Calculation — ${year}`, rows: calcRows },
+                        ];
+                    }
+                    case 'full_compliance': {
+                        const d = data.complianceDonut;
+                        const donutRows = [
+                            ['Metric', 'Value'],
+                            ['Total Audits', d.total],
+                            ['Complaint %', d.complaint + '%'],
+                            ['Pending %', d.pending + '%'],
+                            ['Failed %', d.failed + '%'],
+                        ];
+                        const monthlyRows = [['Month', 'Compliance', 'Audit Type', 'Notes']];
+                        (data.monthlyReports || []).forEach((r) => {
+                            monthlyRows.push([r.month, r.compliance ?? 'No Audit', r.auditType || '-', r.notes || '-']);
+                        });
+                        const auditRows = [['Name', 'Type', 'Auditor', 'Status', 'Date']];
+                        (data.audits || []).forEach((a) => {
+                            auditRows.push([a.name, a.auditType, a.auditor, a.status, a.date || '-']);
+                        });
+                        return [
+                            { title: `Compliance Summary — ${year}`, rows: donutRows },
+                            { title: `Monthly Compliance — ${year}`, rows: monthlyRows },
+                            { title: `Audit Log — ${year}`, rows: auditRows },
+                        ];
+                    }
+                    default:
+                        return [];
+                }
+            }
+
+            function reportTablesToCsv(tables) {
+                return tables.map((t) => {
+                    const header = `"${t.title}"`;
+                    const body = t.rows.map((r) => r.map(csvEscape).join(',')).join('\n');
+                    return `${header}\n${body}`;
+                }).join('\n\n');
+            }
+
+            function reportTablesToHtml(tables) {
+                return tables.map((t) => `
+          <h3 style="margin:18px 0 6px;font-size:14px;color:#16265B;">${t.title}</h3>
+          <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:10px;">
+            ${t.rows.map((r, i) => `
+              <tr>
+                ${r.map((c) => `<${i === 0 ? 'th' : 'td'} style="border:1px solid #cbd5e1;padding:4px 8px;text-align:left;">${c}</${i === 0 ? 'th' : 'td'}>`).join('')}
+              </tr>
+            `).join('')}
+          </table>
+        `).join('');
+            }
+
+            function printReportTables(title, tablesHtml, pageSize, orientation) {
+                const container = document.createElement('div');
+                container.id = 'generated-report-print-area';
+                container.innerHTML = `<h2 style="margin-bottom:4px;color:#16265B;">${title}</h2>${tablesHtml}`;
+                document.body.appendChild(container);
+
+                const styleTag = document.createElement('style');
+                styleTag.id = 'generated-report-print-style';
+                styleTag.textContent = `
+          @page { size: ${pageSize} ${orientation}; margin: 0.6in; }
+          #generated-report-print-area { display: none; }
+          @media print {
+            body > *:not(#generated-report-print-area) { display: none !important; }
+            #generated-report-print-area { display: block !important; }
+          }
+        `;
+                document.head.appendChild(styleTag);
+
+                setTimeout(() => {
+                    window.print();
+                    setTimeout(() => {
+                        styleTag.remove();
+                        container.remove();
+                    }, 500);
+                    AppUI.showToast('PDF export ready — check your print dialog.', 'success');
+                }, 150);
             }
 
             function openExportPdfModal() {

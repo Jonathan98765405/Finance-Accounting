@@ -264,8 +264,6 @@
         renderCashflowTable(year);
       });
 
-      const TAX_CAL_TYPES = ['Income Tax', 'VAT / GST', 'Payroll Tax', 'Withholding Tax'];
-
       const TAX_STATUS_INFO = {
         Filed: {
           badge: 'bg-brand-green/10 text-brand-green',
@@ -451,10 +449,8 @@
 
             <div class="mb-3">
               <label class="block text-xs font-semibold text-navy mb-1">Filing Type</label>
-              <select id="tc-form-label" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy-600/30">
-                <option value="" disabled ${!labelVal ? 'selected' : ''}>Select a tax type</option>
-                ${TAX_CAL_TYPES.map(t => `<option value="${t}" ${labelVal === t ? 'selected' : ''}>${t}</option>`).join('')}
-              </select>
+              <input type="text" id="tc-form-label" value="${labelVal}" placeholder="e.g. Quarterly VAT Return"
+                class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy-600/30">
             </div>
             <div class="grid grid-cols-2 gap-3 mb-3">
               <div>
@@ -474,6 +470,7 @@
               <select id="tc-form-status" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy-600/30">
                 <option value="Upcoming" ${statusVal === 'Upcoming' ? 'selected' : ''}>Upcoming</option>
                 <option value="Filed" ${statusVal === 'Filed' ? 'selected' : ''}>Filed</option>
+                <option value="Overdue" ${statusVal === 'Overdue' ? 'selected' : ''}>Overdue</option>
               </select>
             </div>
 
