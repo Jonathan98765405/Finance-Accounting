@@ -281,8 +281,25 @@
                 <h3 class="flex items-center gap-2 font-bold" style="color:#173A66;">
                     <i class="fa-solid fa-folder-open"></i> Asset Document
                 </h3>
-                <button type="button" onclick="document.getElementById('documentModal').classList.remove('hidden')" class="text-xs font-medium" style="color:#3B82F6;">View All</button>
+                <div class="flex items-center gap-3">
+                    <button type="button" onclick="document.getElementById('uploadDocModal').classList.remove('hidden')" class="text-xs font-medium" style="color:#22B57A;">
+                        <i class="fa-solid fa-upload mr-1"></i> Upload
+                    </button>
+                    <button type="button" onclick="document.getElementById('documentModal').classList.remove('hidden')" class="text-xs font-medium" style="color:#3B82F6;">View All</button>
+                </div>
             </div>
+            @php
+                $docColors = [
+                    'Purchase' => 'background:#DBEAFE;color:#2563EB;',
+                    'Warranty' => 'background:#EDE9FE;color:#7C3AED;',
+                    'Manual' => 'background:#D6F5DF;color:#16A34A;',
+                    'Maintenance' => 'background:#FFF4D6;color:#B45309;',
+                    'Depreciation' => 'background:#FEE2E2;color:#DC2626;',
+                    'Insurance' => 'background:#E0E7FF;color:#4338CA;',
+                    'Asset transfer form' => 'background:#F3E8FF;color:#9333EA;',
+                    'Other' => 'background:#F3F4F6;color:#374151;',
+                ];
+            @endphp
             <table class="w-full text-xs">
                 <thead>
                     <tr class="text-left text-gray-400 border-b border-gray-100">
@@ -294,38 +311,75 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @php
-                        $docs = [
-                            ['name' => 'Purchase Receipt.pdf', 'type' => 'Purchase', 'by' => 'Admin User', 'date' => 'May 15, 2024'],
-                            ['name' => 'Warranty Card.pdf', 'type' => 'Warranty', 'by' => 'Admin User', 'date' => 'May 15, 2024'],
-                            ['name' => 'User Manual.pdf', 'type' => 'Manual', 'by' => 'Admin User', 'date' => 'May 15, 2024'],
-                            ['name' => 'Maintenance checklist.pdf', 'type' => 'Maintenance', 'by' => 'Admin User', 'date' => 'June 20, 2024'],
-                        ];
-                        $docColors = [
-                            'Purchase' => 'background:#DBEAFE;color:#2563EB;',
-                            'Warranty' => 'background:#EDE9FE;color:#7C3AED;',
-                            'Manual' => 'background:#D6F5DF;color:#16A34A;',
-                            'Maintenance' => 'background:#FFF4D6;color:#B45309;',
-                        ];
-                    @endphp
-                    @foreach ($docs as $d)
+                    @forelse ($documents->take(4) as $d)
                         <tr class="border-b border-gray-50">
-                            <td class="py-2 font-medium text-gray-700">{{ $d['name'] }}</td>
+                            <td class="py-2 font-medium text-gray-700">{{ $d->file_name }}</td>
                             <td class="py-2">
-                                <span class="px-2 py-0.5 rounded-full font-medium" style="{{ $docColors[$d['type']] }}">{{ $d['type'] }}</span>
+                                <span class="px-2 py-0.5 rounded-full font-medium" style="{{ $docColors[$d->type] ?? $docColors['Other'] }}">{{ $d->type }}</span>
                             </td>
-                            <td class="py-2 text-gray-500">{{ $d['by'] }}</td>
-                            <td class="py-2 text-gray-500">{{ $d['date'] }}</td>
+                            <td class="py-2 text-gray-500">{{ $d->uploaded_by }}</td>
+                            <td class="py-2 text-gray-500">{{ $d->created_at->format('M d, Y') }}</td>
                             <td class="py-2 text-right">
-                                <i class="fa-solid fa-download text-gray-400 hover:text-gray-600 mr-2 cursor-pointer"></i>
-                                <i class="fa-solid fa-trash text-red-400 hover:text-red-600 cursor-pointer"></i>
+                                <a href="{{ url('/fixed-assets/documents/' . $d->id . '/download') }}" class="text-gray-400 hover:text-gray-600 mr-2"><i class="fa-solid fa-download"></i></a>
+                                <form action="{{ url('/fixed-assets/documents/' . $d->id . '/delete') }}" method="POST" class="inline" onsubmit="return confirm('Delete this document?');">
+                                    @csrf
+                                    <button type="submit" class="text-red-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button>
+                                </form>
                             </td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr><td colspan="5" class="py-4 text-center text-gray-400">No documents uploaded yet.</td></tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
     </div>
+
+        {{-- Upload Document Modal --}}
+        <div id="uploadDocModal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+             onclick="if(event.target===this) this.classList.add('hidden')">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+                <div class="flex items-start justify-between mb-4">
+                    <h2 class="text-xl font-bold" style="color:#173A66;">Upload Document</h2>
+                    <button type="button" onclick="document.getElementById('uploadDocModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <form action="{{ url('/fixed-assets/' . $asset->asset_id . '/documents') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                    @csrf
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1.5">File <span class="text-red-500">*</span></label>
+                        <input type="file" name="file" required class="w-full text-sm border border-gray-200 rounded-md px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1.5">Type <span class="text-red-500">*</span></label>
+                        <select name="type" required class="w-full text-sm border border-gray-200 rounded-md px-3 py-2">
+                            <option value="Purchase">Purchase</option>
+                            <option value="Warranty">Warranty</option>
+                            <option value="Manual">Manual</option>
+                            <option value="Maintenance">Maintenance</option>
+                            <option value="Depreciation">Depreciation</option>
+                            <option value="Insurance">Insurance</option>
+                            <option value="Asset transfer form">Asset transfer form</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1.5">Description</label>
+                        <textarea name="description" rows="2" class="w-full text-sm border border-gray-200 rounded-md px-3 py-2"></textarea>
+                    </div>
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" onclick="document.getElementById('uploadDocModal').classList.add('hidden')"
+                                class="rounded-md border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 bg-white hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit" class="rounded-md bg-[#22B57A] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#1f965f]">
+                            Upload
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
     {{-- ============ ASSIGNMENT POPUP MODAL ============ --}}
     <div id="assignmentModal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
@@ -451,7 +505,7 @@
         <div class="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[85vh] overflow-y-auto p-6">
 
             <div class="text-sm mb-2">
-                <a href="{{ url('/fixed-assets/assignment') }}" class="font-medium" style="color:#3B82F6;">Asset Assignment &amp; Maintenance</a>
+                <a href="{{ url('/fixed-assets/assignment/' . $asset->asset_id) }}" class="font-medium" style="color:#3B82F6;">Asset Assignment &amp; Maintenance</a>
                 <span class="text-gray-400 mx-1.5">&gt;</span>
                 <span class="text-gray-500">Asset Document</span>
             </div>
@@ -459,7 +513,7 @@
             <div class="flex items-start justify-between mb-4">
                 <div>
                     <h2 class="text-2xl font-bold" style="color:#173A66;">Asset Document</h2>
-                    <p class="text-gray-500 text-sm mt-1">view the complete history and important of the selected asset.</p>
+                    <p class="text-gray-500 text-sm mt-1">All documents uploaded for this asset.</p>
                 </div>
                 <button type="button" onclick="document.getElementById('documentModal').classList.add('hidden')"
                         class="px-4 py-2 rounded-md border border-gray-300 text-sm font-medium text-gray-700 bg-white shadow-sm hover:bg-gray-50 whitespace-nowrap">
@@ -480,54 +534,31 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @php
-                            $docsFull = [
-                                ['name' => 'Purchase Receipt.pdf',    'type' => 'Purchase',            'desc' => 'Official receipt for the purchase of the asset.', 'by' => 'Admin User',    'size' => '245 KB'],
-                                ['name' => 'Warranty Card.pdf',       'type' => 'Warranty',            'desc' => 'Warranty card for the asset.',                     'by' => 'Admin User',    'size' => '180 KB'],
-                                ['name' => 'User Manual.pdf',         'type' => 'Manual',               'desc' => 'User Manual and setup guide.',                     'by' => 'Admin User',    'size' => '1.2 MB'],
-                                ['name' => 'Maintenance Checklist.pdf','type' => 'Maintenance',          'desc' => 'Maintenance checklist form.',                      'by' => 'Admin User',    'size' => '320 KB'],
-                                ['name' => 'Repair Report.pdf',       'type' => 'Maintenance',          'desc' => 'Repair report after preventive maintenance.',     'by' => 'Tech Solution', 'size' => '512 KB'],
-                                ['name' => 'Deprecation.pdf',         'type' => 'Depreciation',         'desc' => 'Depreciation schedule for this asset.',           'by' => 'Admin User',    'size' => '78 KB'],
-                                ['name' => 'Insurance Policy.pdf',    'type' => 'Insurance',            'desc' => 'Insurance Policy document.',                       'by' => 'Admin User',    'size' => '425 KB'],
-                                ['name' => 'Transfer Form.pdf',       'type' => 'Asset transfer form',  'desc' => 'Asset transfet form.',                             'by' => 'Admin User',    'size' => '95 KB'],
-                            ];
-                            $docFullColors = [
-                                'Purchase' => 'background:#DBEAFE;color:#2563EB;',
-                                'Warranty' => 'background:#EDE9FE;color:#7C3AED;',
-                                'Manual' => 'background:#D6F5DF;color:#16A34A;',
-                                'Maintenance' => 'background:#FFF4D6;color:#B45309;',
-                                'Depreciation' => 'background:#FEE2E2;color:#DC2626;',
-                                'Insurance' => 'background:#E0E7FF;color:#4338CA;',
-                                'Asset transfer form' => 'background:#F3E8FF;color:#9333EA;',
-                            ];
-                        @endphp
-                        @foreach ($docsFull as $d)
+                        @forelse ($documents as $d)
                             <tr class="border-b border-gray-50 hover:bg-gray-50">
-                                <td class="px-4 py-3 font-medium text-gray-700">{{ $d['name'] }}</td>
+                                <td class="px-4 py-3 font-medium text-gray-700">{{ $d->file_name }}</td>
                                 <td class="px-4 py-3">
-                                    <span class="px-2 py-0.5 rounded-full text-xs font-medium" style="{{ $docFullColors[$d['type']] ?? 'background:#F3F4F6;color:#374151;' }}">{{ $d['type'] }}</span>
+                                    <span class="px-2 py-0.5 rounded-full text-xs font-medium" style="{{ $docColors[$d->type] ?? $docColors['Other'] }}">{{ $d->type }}</span>
                                 </td>
-                                <td class="px-4 py-3 text-gray-500">{{ $d['desc'] }}</td>
-                                <td class="px-4 py-3 text-gray-500">{{ $d['by'] }}</td>
-                                <td class="px-4 py-3 text-gray-500">{{ $d['size'] }}</td>
+                                <td class="px-4 py-3 text-gray-500">{{ $d->description ?? '-' }}</td>
+                                <td class="px-4 py-3 text-gray-500">{{ $d->uploaded_by }}</td>
+                                <td class="px-4 py-3 text-gray-500">{{ $d->formatted_size }}</td>
                                 <td class="px-4 py-3 text-right">
-                                    <i class="fa-solid fa-download text-gray-400 hover:text-gray-600 mr-3 cursor-pointer"></i>
-                                    <i class="fa-solid fa-trash text-red-400 hover:text-red-600 cursor-pointer"></i>
+                                    <a href="{{ url('/fixed-assets/documents/' . $d->id . '/download') }}" class="text-gray-400 hover:text-gray-600 mr-3"><i class="fa-solid fa-download"></i></a>
+                                    <form action="{{ url('/fixed-assets/documents/' . $d->id . '/delete') }}" method="POST" class="inline" onsubmit="return confirm('Delete this document?');">
+                                        @csrf
+                                        <button type="submit" class="text-red-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button>
+                                    </form>
                                 </td>
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr><td colspan="6" class="px-4 py-6 text-center text-gray-400">No documents uploaded yet.</td></tr>
+                        @endforelse
                     </tbody>
                 </table>
 
                 <div class="flex items-center justify-between px-4 py-3 text-xs text-gray-400">
-                    <span>Showing 1 to 13 of 13 entries</span>
-                    <div class="flex gap-1">
-                        <button class="w-7 h-7 rounded-md text-white text-xs" style="background:#173A66;">1</button>
-                        <button class="w-7 h-7 rounded-md border border-gray-200 text-xs">2</button>
-                        <button class="w-7 h-7 rounded-md border border-gray-200 text-xs">3</button>
-                        <span class="px-1">...</span>
-                        <button class="w-7 h-7 rounded-md border border-gray-200 text-xs">13</button>
-                    </div>
+                    <span>Showing {{ $documents->count() }} of {{ $documents->count() }} documents</span>
                 </div>
             </div>
         </div>

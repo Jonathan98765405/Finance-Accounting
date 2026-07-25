@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\FixedAssets\FixedAsset;
 use App\Models\FixedAssets\AssetCategory;
 use App\Models\FixedAssets\ActivityLog;
+use App\Models\FixedAssets\Document;
 use App\Services\GeneralLedgerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 class FixedAssetController extends Controller
 {
@@ -58,7 +60,6 @@ class FixedAssetController extends Controller
             ['label' => 'Under Maintenance', 'value' => $allAssets->where('status', 'under_maintenance')->count(), 'icon' => 'fa-screwdriver-wrench', 'color' => '#F5A623'],
         ];
 
-        // Dynamic Category Breakdown (base sa totoong datos)
         $totalCount = max($allAssets->count(), 1);
         $categoryBreakdown = $allAssets
             ->groupBy(fn($a) => $a->category->category_name ?? 'Uncategorized')
@@ -69,7 +70,6 @@ class FixedAssetController extends Controller
             ->sortByDesc('percent')
             ->values();
 
-        // Dynamic Status Breakdown (base sa totoong datos, valid statuses lang)
         $statusBreakdown = collect($statusMap)->map(function ($label, $key) use ($allAssets, $totalCount) {
             return [
                 'label' => $label,
@@ -90,7 +90,6 @@ class FixedAssetController extends Controller
             ];
         });
 
-        // ✅ Real Recent Activities (mula sa fa_activity_logs table)
         $iconMap = [
             'created'  => ['icon' => 'plus',      'color' => '#1F2937'],
             'updated'  => ['icon' => 'pencil',    'color' => '#3B82F6'],
@@ -215,39 +214,21 @@ class FixedAssetController extends Controller
             'description' => $asset->description ?? '-',
         ];
 
-        return view('fixed-assets.assignment', compact('assetData'));
+        // ✅ Totoong documents mula sa database, hindi na hardcoded
+        $documents = Schema::hasTable('fa_documents')
+            ? Document::where('asset_id', $asset->asset_id)->orderByDesc('created_at')->get()
+            : collect();
+
+        return view('fixed-assets.assignment', compact('asset', 'assetData', 'documents'));
     }
 
     public function edit($id)
-{
-    $asset = FixedAsset::with('category')->findOrFail($id);
-    $categories = AssetCategory::all();
+    {
+        $asset = FixedAsset::findOrFail($id);
+        $categories = AssetCategory::all();
 
-    $statusMap = [
-        'active' => 'Active',
-        'disposed' => 'Disposed',
-        'under_maintenance' => 'Under Maintenance',
-        'fully_depreciated' => 'Fully Depreciated',
-    ];
-
-    $assetData = [
-        'asset_id' => $asset->asset_id,
-        'tag' => $asset->asset_tag,
-        'name' => $asset->asset_name,
-        'category' => $asset->category->category_name ?? 'Uncategorized',
-        'status' => $statusMap[$asset->status] ?? ucfirst($asset->status),
-        'purchase_date' => $asset->acquisition_date->format('M d, Y'),
-        'purchase_cost' => '₱' . number_format($asset->acquisition_cost, 2),
-        'useful_life' => $asset->useful_life_years . ' Year',
-        'location' => $asset->location ?? '-',
-        'condition' => $asset->condition ?? 'Good',
-        'serial_number' => $asset->serial_number ?? '-',
-        'warranty' => $asset->warranty_years ? $asset->warranty_years . ' Year(s)' : '-',
-        'description' => $asset->description ?? '-',
-    ];
-
-    return view('fixed-assets.edit', compact('asset', 'categories', 'assetData'));
-}
+        return view('fixed-assets.edit', compact('asset', 'categories'));
+    }
 
     public function update(Request $request, $id)
     {
@@ -298,9 +279,6 @@ class FixedAssetController extends Controller
         $asset = FixedAsset::findOrFail($id);
         $assetName = $asset->asset_name;
 
-        // Remove every GL entry ever posted for this asset (acquisition,
-        // any depreciation periods, and disposal) so the GL doesn't keep
-        // balances for an asset that no longer exists.
         $this->gl->reverseAssetEntries($asset);
 
         $asset->delete();
@@ -330,7 +308,6 @@ class FixedAssetController extends Controller
             'disposal_reason' => 'required|in:sold,scrapped,donated,lost',
         ]);
 
-        // Gain/Loss = Disposal Value - Book Value (at time of disposal)
         $gainLoss = $validated['disposal_value'] - $asset->book_value;
 
         $asset->update([
@@ -341,7 +318,6 @@ class FixedAssetController extends Controller
             'gain_loss'       => $gainLoss,
         ]);
 
-        // Auto-post the disposal to the General Ledger
         $this->gl->postDisposal($asset->fresh());
 
         ActivityLog::create([
@@ -351,5 +327,57 @@ class FixedAssetController extends Controller
         ]);
 
         return redirect('/fixed-assets')->with('success', 'Asset successfully disposed!');
+    }
+
+    // ============ DOCUMENT UPLOAD / DOWNLOAD / DELETE ============
+
+    public function uploadDocument(Request $request, $id)
+    {
+        $asset = FixedAsset::findOrFail($id);
+
+        $validated = $request->validate([
+            'file' => 'required|file|max:10240', // max 10MB
+            'type' => 'required|in:Purchase,Warranty,Manual,Maintenance,Depreciation,Insurance,Asset transfer form,Other',
+            'description' => 'nullable|string|max:255',
+        ]);
+
+        $uploaded = $request->file('file');
+        $path = $uploaded->store('asset-documents', 'public');
+
+        Document::create([
+            'asset_id' => $asset->asset_id,
+            'file_name' => $uploaded->getClientOriginalName(),
+            'file_path' => $path,
+            'type' => $validated['type'],
+            'description' => $validated['description'] ?? null,
+            'uploaded_by' => $this->actor(),
+            'file_size' => $uploaded->getSize(),
+        ]);
+
+        return redirect('/fixed-assets/assignment/' . $asset->asset_id)->with('success', 'Document uploaded!');
+    }
+
+    public function downloadDocument($documentId)
+    {
+        $document = Document::findOrFail($documentId);
+
+        if (!Storage::disk('public')->exists($document->file_path)) {
+            return redirect()->back()->with('error', 'File not found on server.');
+        }
+
+        return Storage::disk('public')->download($document->file_path, $document->file_name);
+    }
+
+    public function deleteDocument($documentId)
+    {
+        $document = Document::findOrFail($documentId);
+        $assetId = $document->asset_id;
+
+        if (Storage::disk('public')->exists($document->file_path)) {
+            Storage::disk('public')->delete($document->file_path);
+        }
+        $document->delete();
+
+        return redirect('/fixed-assets/assignment/' . $assetId)->with('success', 'Document deleted.');
     }
 }

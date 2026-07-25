@@ -253,7 +253,16 @@ Route::post('/fixed-assets/edit/{id}', [FixedAssetController::class, 'update'])
 Route::post('/fixed-assets/delete/{id}', [FixedAssetController::class, 'destroy'])
     ->name('fixed-assets.destroy');
 Route::get('/fixed-assets/dispose/{id}', [FixedAssetController::class, 'disposeForm']);
-Route::post('/fixed-assets/dispose/{id}', [FixedAssetController::class, 'dispose']);    
+Route::post('/fixed-assets/dispose/{id}', [FixedAssetController::class, 'dispose']); 
+
+Route::post('/fixed-assets/{id}/documents', [FixedAssetController::class, 'uploadDocument'])
+    ->name('fixed-assets.documents.upload');
+
+Route::get('/fixed-assets/documents/{documentId}/download', [FixedAssetController::class, 'downloadDocument'])
+    ->name('fixed-assets.documents.download');
+
+Route::post('/fixed-assets/documents/{documentId}/delete', [FixedAssetController::class, 'deleteDocument'])
+    ->name('fixed-assets.documents.delete');
 
  /*
 |--------------------------------------------------------------------------
