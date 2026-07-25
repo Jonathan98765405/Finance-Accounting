@@ -168,7 +168,7 @@
             <div class="flex gap-3">
                 <select name="category" onchange="this.form.submit()" class="border border-gray-200 rounded-md text-sm px-3 py-2">
                     <option value="">All Categories</option>
-                    @foreach (['IT Equipment', 'Furniture & Fixtures', 'Vehicles', 'Machinery & Equipment', 'Others'] as $catOption)
+                    @foreach (['Office Equipment', 'Furniture & Fixtures', 'Vehicles', 'Buildings', 'Others'] as $catOption)
                         <option value="{{ $catOption }}" {{ request('category') === $catOption ? 'selected' : '' }}>{{ $catOption }}</option>
                     @endforeach
                 </select>
