@@ -13,7 +13,7 @@
             <p class="text-xs text-slate-500 mt-0.5">Enter supplier details to register a new vendor in the system</p>
         </div>
 
-        <form action="{{ route('vendors.store') }}" method="POST" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <form action="{{ route('vendors.store') }}" method="POST" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
             @csrf
             <div>
                 <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Vendor Name</label>
@@ -25,6 +25,12 @@
                 <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Vendor Code</label>
                 <input type="text" name="code" placeholder="Vendor Code (e.g. VEND-001)" 
                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:border-navy focus:ring-1 focus:ring-navy outline-none transition" required>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Email</label>
+                <input type="email" name="email" placeholder="vendor@example.com" 
+                       class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:border-navy focus:ring-1 focus:ring-navy outline-none transition">
             </div>
 
             <div>
@@ -59,6 +65,7 @@
                 <tr>
                     <th class="px-6 py-3.5">Code</th>
                     <th class="px-6 py-3.5">Name</th>
+                    <th class="px-6 py-3.5">Email</th>
                     <th class="px-6 py-3.5">Payment Terms</th>
                     <th class="px-6 py-3.5">Status</th>
                 </tr>
@@ -71,6 +78,9 @@
                         </td>
                         <td class="px-6 py-4 font-semibold text-slate-800">
                             {{ $vendor->name }}
+                        </td>
+                        <td class="px-6 py-4 font-medium text-slate-600">
+                            {{ $vendor->email ?? '—' }}
                         </td>
                         <td class="px-6 py-4 font-medium text-slate-600">
                             {{ $vendor->payment_terms }}
@@ -88,7 +98,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="px-6 py-12 text-center text-slate-400">
+                        <td colspan="5" class="px-6 py-12 text-center text-slate-400">
                             <div class="flex flex-col items-center justify-center">
                                 <i data-lucide="users" class="w-10 h-10 stroke-1 mb-2 text-slate-300"></i>
                                 <p class="font-medium text-slate-500 text-sm">No vendors added yet.</p>

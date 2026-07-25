@@ -24,10 +24,22 @@ class DashboardController extends Controller
         $adminFirstName = optional(Auth::user())->first_name ?? 'Admin';
 
         // ================= ACCOUNT PAYABLE (real) =================
-        // Same query AccountsPayableController::dashboard() uses for totalAP,
-        // so this card always matches the AP module's own dashboard.
+        // Invoice uses `status` and `total_amount` (not `payment_status` /
+        // `amount` — those don't exist on this model, which is why this
+        // query was silently failing and always falling back to null).
+        //
+        // Outstanding AP = total_amount minus whatever's already ACTUALLY
+        // been paid per invoice. Only payments with status 'paid' count —
+        // a 'scheduled' payment already has a row in ap_payments with the
+        // full amount, but the money hasn't moved yet, so it must not be
+        // subtracted (that mismatch is why this card didn't match the AP
+        // module's own Total AP figure).
         try {
-            $accountPayableRaw = ApInvoice::whereNotIn('payment_status', ['paid'])->sum('amount');
+            $accountPayableRaw = ApInvoice::where('status', '!=', 'paid')
+                ->withSum(['payments' => fn ($q) => $q->where('status', 'paid')], 'amount')
+                ->get()
+                ->sum(fn ($invoice) => $invoice->total_amount - ($invoice->payments_sum_amount ?? 0));
+
             $accountPayable = '₱' . number_format($accountPayableRaw, 2);
         } catch (\Throwable $e) {
             report($e);
