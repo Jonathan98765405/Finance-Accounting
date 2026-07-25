@@ -277,11 +277,14 @@ class AccountsPayableController extends Controller
             ->map(function (Invoice $invoice) {
                 $grn = $invoice->purchaseOrder?->goodsReceipts->first();
 
+                // Compare against subtotal (VAT-exclusive), not total_amount,
+                // since PO/GRN totals from Procurement don't include the 12%
+                // VAT that gets added when the invoice is recorded.
                 $invoice->po_matched_live = $invoice->purchaseOrder
-                    && abs((float) $invoice->purchaseOrder->total_amount - (float) $invoice->total_amount) < 0.01;
+                    && abs((float) $invoice->purchaseOrder->total_amount - (float) $invoice->subtotal) < 0.01;
 
                 $invoice->grn_matched_live = $grn
-                    && abs((float) $grn->total_amount - (float) $invoice->total_amount) < 0.01;
+                    && abs((float) $grn->total_amount - (float) $invoice->subtotal) < 0.01;
 
                 return $invoice;
             });
@@ -312,11 +315,14 @@ class AccountsPayableController extends Controller
         $invoice->load('supplier', 'purchaseOrder.goodsReceipts', 'items');
         $goodsReceipt = $invoice->purchaseOrder?->goodsReceipts->first();
 
+        // Compare against subtotal (VAT-exclusive), not total_amount,
+        // since PO/GRN totals from Procurement don't include the 12%
+        // VAT that gets added when the invoice is recorded.
         $poMatched = $invoice->purchaseOrder
-            && abs((float) $invoice->purchaseOrder->total_amount - (float) $invoice->total_amount) < 0.01;
+            && abs((float) $invoice->purchaseOrder->total_amount - (float) $invoice->subtotal) < 0.01;
 
         $grnMatched = $goodsReceipt
-            && abs((float) $goodsReceipt->total_amount - (float) $invoice->total_amount) < 0.01;
+            && abs((float) $goodsReceipt->total_amount - (float) $invoice->subtotal) < 0.01;
 
         $purchaseOrders = PurchaseOrder::where('supplier_id', $invoice->supplier_id)
             ->orderByDesc('po_date')
@@ -821,13 +827,27 @@ class AccountsPayableController extends Controller
         $payment->load('invoice.supplier');
 
         $validated = $request->validate([
+            'recipient' => 'nullable|email',
             'subject' => 'nullable|string',
             'message' => 'nullable|string',
         ]);
 
+        // The supplier's email is normally the recipient, but it can be
+        // blank if the vendor record was created without one. Mail::to()
+        // throws a hard 500 (LogicException: "must have a To, Cc, or Bcc
+        // header") if it ends up with an empty address, so fail with a
+        // clear, recoverable message instead of crashing the request.
+        $recipient = $validated['recipient'] ?? $payment->invoice->supplier->email;
+
+        if (! $recipient) {
+            return redirect()->route('ap.payment')->with(
+                'error',
+                "Cannot send remittance advice: {$payment->invoice->supplier->name} has no email address on file. Add one to the supplier record and try again."
+            );
+        }
+
         $this->ensureRemittancePdf($payment);
 
-        $recipient = $payment->invoice->supplier->email;
         $subject = $validated['subject'] ?? "Remittance Advice - Invoice {$payment->invoice->invoice_number}";
         $body = $validated['message'] ?? "Please find attached the remittance advice for invoice {$payment->invoice->invoice_number}.";
 
