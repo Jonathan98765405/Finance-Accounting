@@ -23,7 +23,6 @@ class Document extends Model
         return $this->belongsTo(FixedAsset::class, 'asset_id', 'asset_id');
     }
 
-    // Human-readable file size, e.g. "245 KB", "1.2 MB"
     public function getFormattedSizeAttribute(): string
     {
         $bytes = $this->file_size;
@@ -35,6 +34,7 @@ class Document extends Model
         }
         return $bytes . ' B';
     }
+
     public function getFileUrlAttribute(): string
     {
         return \Storage::disk('public')->url($this->file_path);

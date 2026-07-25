@@ -59,6 +59,9 @@
 
     {{-- Chart.js (used by pages that render charts, e.g. Financial Reports) --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    
+    {{-- Font Awesome icons (used across the app: fa-solid fa-xxx classes) --}}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         body {

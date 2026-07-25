@@ -320,10 +320,9 @@
                             <td class="py-2 text-gray-500">{{ $d->uploaded_by }}</td>
                             <td class="py-2 text-gray-500">{{ $d->created_at->format('M d, Y') }}</td>
                             <td class="py-2 text-right">
-                                <a href="{{ url('/fixed-assets/documents/' . $d->id . '/download') }}" class="text-gray-400 hover:text-gray-600 mr-2"><i class="fa-solid fa-download"></i></a>
+                                <a href="{{ url('/fixed-assets/documents/' . $d->id . '/download') }}" class="text-gray-400 hover:text-gray-600 mr-2" title="Download"><i class="fa-solid fa-download"></i></a>
                                 <form action="{{ url('/fixed-assets/documents/' . $d->id . '/delete') }}" method="POST" class="inline" onsubmit="return confirm('Delete this document?');">
-                                    @csrf
-                                    <button type="submit" class="text-red-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button>
+                                    <button type="submit" class="text-red-400 hover:text-red-600" title="Delete"><i class="fa-solid fa-trash"></i></button>
                                 </form>
                             </td>
                         </tr>
@@ -544,10 +543,10 @@
                                 <td class="px-4 py-3 text-gray-500">{{ $d->uploaded_by }}</td>
                                 <td class="px-4 py-3 text-gray-500">{{ $d->formatted_size }}</td>
                                 <td class="px-4 py-3 text-right">
-                                    <a href="{{ url('/fixed-assets/documents/' . $d->id . '/download') }}" class="text-gray-400 hover:text-gray-600 mr-3"><i class="fa-solid fa-download"></i></a>
+                                    <a href="{{ url('/fixed-assets/documents/' . $d->id . '/download') }}" class="text-gray-400 hover:text-gray-600 mr-3" title="Download"><i class="fa-solid fa-download"></i></a>
                                     <form action="{{ url('/fixed-assets/documents/' . $d->id . '/delete') }}" method="POST" class="inline" onsubmit="return confirm('Delete this document?');">
                                         @csrf
-                                        <button type="submit" class="text-red-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button>
+                                        <button type="submit" class="text-red-400 hover:text-red-600" title="Delete"><i class="fa-solid fa-trash"></i></button>
                                     </form>
                                 </td>
                             </tr>
