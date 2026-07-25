@@ -836,12 +836,13 @@ async function openReminderHistoryModal() {
 
 }
 
-
-
-
 function openReportModal() {
     const typeOpts = reportTypes.map(r => `<option>${r}</option>`).join('');
     const customerOpts = '<option value="">All Customers</option>' + customers.map(c => `<option value="${c.id}">${c.customer_name}</option>`).join('');
+
+    // Route URLs come from Blade so they respect your app's configured base path.
+    const REPORT_GENERATE_URL = "{{ route('receivable.report.generate') }}";
+    const REPORT_EXPORT_PDF_URL = "{{ route('receivable.report.export.pdf') }}";
 
     AppUI.openModal(`
         <h3 class="text-xl font-bold text-navy mb-1">Generate Analytical Statement</h3>
@@ -851,14 +852,14 @@ function openReportModal() {
                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Statement Strategy Type</label>
                 <select id="repType" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-navy">${typeOpts}</select>
             </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div class="min-w-0">
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Execution Range From</label>
-                    <input type="date" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-navy">
+                    <input type="date" id="repDateFrom" class="w-full min-w-0 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-navy">
                 </div>
-                <div>
+                <div class="min-w-0">
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Execution Range To</label>
-                    <input type="date" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-navy">
+                    <input type="date" id="repDateTo" class="w-full min-w-0 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-navy">
                 </div>
             </div>
             <div>
@@ -866,25 +867,97 @@ function openReportModal() {
                 <select id="repCust" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-navy">${customerOpts}</select>
             </div>
             <p id="stmtError" class="text-brand-red text-xs font-semibold hidden">Portfolio target verification requires explicit configuration selection for statement parameters.</p>
+
+            <div id="reportResultWrap" class="hidden pt-2">
+                <!-- Server-rendered partial gets injected here -->
+            </div>
+
             <div class="flex justify-end gap-3 pt-2">
+                <button type="button" id="repExportBtn" class="hidden rounded-xl px-5 py-2.5 text-sm font-semibold text-navy border border-navy/20 hover:bg-navy/5">
+                    Export PDF
+                </button>
                 <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50">Cancel</button>
-                <button type="submit" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy/95 shadow-sm">Compile Ledger</button>
+                <button type="submit" id="repSubmitBtn" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy/95 shadow-sm">Generate Report</button>
             </div>
         </form>
-    `, 'md');
+    `, 'xl');
 
-    document.getElementById('reportSubmitForm').addEventListener('submit', function(e) {
+    const form = document.getElementById('reportSubmitForm');
+    const exportBtn = document.getElementById('repExportBtn');
+
+    function buildParams() {
+        return new URLSearchParams({
+            report_type: document.getElementById('repType').value,
+            date_from: document.getElementById('repDateFrom').value,
+            date_to: document.getElementById('repDateTo').value,
+            customer_id: document.getElementById('repCust').value,
+        });
+    }
+
+    form.addEventListener('submit', async function (e) {
         e.preventDefault();
+
         const type = document.getElementById('repType').value;
-        const cust = document.getElementById('repCust').value;
-        if (type === 'Customer Statement' && !cust) {
-            document.getElementById('stmtError').classList.remove('hidden');
+        const custId = document.getElementById('repCust').value;
+        const errorEl = document.getElementById('stmtError');
+        const resultWrap = document.getElementById('reportResultWrap');
+        const submitBtn = document.getElementById('repSubmitBtn');
+
+        errorEl.classList.add('hidden');
+        resultWrap.classList.add('hidden');
+        exportBtn.classList.add('hidden');
+
+        if (type === 'Customer Statement' && !custId) {
+            errorEl.textContent = 'Portfolio target verification requires explicit configuration selection for statement parameters.';
+            errorEl.classList.remove('hidden');
             return;
         }
-        AppUI.closeModal();
-        AppUI.showToast('Ledger document compilation completed successfully.', 'success');
+
+        const originalLabel = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Generating...';
+
+        try {
+            const params = buildParams();
+            const res = await fetch(`${REPORT_GENERATE_URL}?${params.toString()}`, {
+                method: 'GET',
+                headers: {
+                    // Laravel's $request->ajax() checks for this header,
+                    // which is how the controller decides partial vs full view.
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'text/html',
+                },
+            });
+
+            if (!res.ok) {
+                throw new Error(`Server returned ${res.status}`);
+            }
+
+            const html = await res.text();
+            resultWrap.innerHTML = html;
+            resultWrap.classList.remove('hidden');
+            exportBtn.classList.remove('hidden');
+
+            AppUI.showToast('Report generated successfully.', 'success');
+
+        } catch (err) {
+            errorEl.textContent = 'Error generating report: ' + err.message;
+            errorEl.classList.remove('hidden');
+            AppUI.showToast('Failed to generate report.', 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalLabel;
+        }
+    });
+
+    exportBtn.addEventListener('click', function () {
+        const params = buildParams();
+        // Full navigation download; no AJAX needed since the controller
+        // streams a PDF response directly.
+        window.location.href = `${REPORT_EXPORT_PDF_URL}?${params.toString()}`;
     });
 }
+
 
 function openInvoiceModal(id) {
     const invoice = invoicesData.find(i => i.id === id);

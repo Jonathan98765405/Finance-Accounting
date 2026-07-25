@@ -794,53 +794,56 @@ public function reminderHistory()
      * Generate a filtered Accounts Receivable report.
      */
     public function generateReport(Request $request)
-    {
-        $query = Invoice::with('customer');
+{
+    $query = Invoice::with('customer');
 
-        // Filter by Report Type
-        $reportType = $request->report_type;
+    $reportType = $request->report_type;
 
-        switch ($reportType) {
+    switch ($reportType) {
+        case 'Outstanding Invoices':
+            $query->where('balance', '>', 0);
+            break;
 
-            case 'Outstanding Invoices':
-                $query->where('balance', '>', 0);
-                break;
+        case 'Customer Statement':
+            // Customer filter lang
+            break;
 
-            case 'Customer Statement':
-                // Customer filter lang
-                break;
+        case 'Collection Report':
+            $query->where('status', 'Paid');
+            break;
 
-            case 'Collection Report':
-                $query->where('status', 'Paid');
-                break;
+        case 'Accounts Receivable Summary':
+        default:
+            break;
+    }
 
-            case 'Accounts Receivable Summary':
-            default:
-                // Lahat ng invoices
-                break;
-        }
+    if ($request->filled('customer_id')) {
+        $query->where('customer_id', $request->customer_id);
+    }
 
-        // Filter by Customer
-        if ($request->filled('customer_id')) {
-            $query->where('customer_id', $request->customer_id);
-        }
+    if ($request->filled('date_from')) {
+        $query->whereDate('invoice_date', '>=', $request->date_from);
+    }
 
-        // Filter by Date
-        if ($request->filled('date_from')) {
-            $query->whereDate('invoice_date', '>=', $request->date_from);
-        }
+    if ($request->filled('date_to')) {
+        $query->whereDate('invoice_date', '<=', $request->date_to);
+    }
 
-        if ($request->filled('date_to')) {
-            $query->whereDate('invoice_date', '<=', $request->date_to);
-        }
+    $invoices = $query->orderBy('invoice_date', 'desc')->get();
 
-        $invoices = $query->orderBy('invoice_date', 'desc')->get();
-
-        return view('accounts-receivable.results', [
+    // AJAX (modal) requests get the bare partial; direct visits get the full page.
+    if ($request->ajax() || $request->wantsJson()) {
+        return view('accounts-receivable.report-partial', [
             'invoices' => $invoices,
             'reportType' => $request->report_type,
         ]);
     }
+
+    return view('accounts-receivable.results', [
+        'invoices' => $invoices,
+        'reportType' => $request->report_type,
+    ]);
+}
 
     /**
      * Export the filtered Accounts Receivable report as a PDF.
