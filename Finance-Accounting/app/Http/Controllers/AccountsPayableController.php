@@ -82,7 +82,7 @@ class AccountsPayableController extends Controller
             ->withSum(['invoices as overdue' => function ($q) {
                 $q->where('due_date', '<', now())->whereNotIn('status', ['paid']);
             }], 'total_amount')
-            ->having('total_due', '>', 0)
+            ->whereHas('invoices')
             ->orderByDesc('total_due')
             ->get();
 

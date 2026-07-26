@@ -12,7 +12,28 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                sans: ['Inter', 'Figtree', ...defaultTheme.fontFamily.sans],
+            },
+            colors: {
+                navy: {
+                    DEFAULT: '#16265B',
+                    50: '#eef0fa',
+                    100: '#dfe3f5',
+                    600: '#1f3372',
+                    700: '#182a63',
+                    800: '#16265B',
+                    900: '#0f1a42',
+                },
+                brand: {
+                    green: '#1FCB88',
+                    greenDark: '#12A86F',
+                    blue: '#2F4CDD',
+                    orange: '#F5941F',
+                    red: '#EF4B4B',
+                },
+            },
+            boxShadow: {
+                card: '0 2px 10px 0 rgba(16, 24, 64, 0.06)',
             },
         },
     },
