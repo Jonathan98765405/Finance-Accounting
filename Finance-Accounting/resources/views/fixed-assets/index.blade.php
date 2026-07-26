@@ -16,13 +16,10 @@
         </div>
         <div class="flex gap-3">
             <a href="{{ url('/fixed-assets/register') }}"
-               class="px-5 py-2 rounded-md text-white text-sm font-semibold shadow" style="background:#22B57A;">
+               class="px-5 py-2 rounded-md text-white text-sm font-semibold shadow" style="background:#173A66;">
                 Registration
             </a>
-            <a href="{{ url('/fixed-assets/assignment') }}"
-               class="px-5 py-2 rounded-md text-white text-sm font-semibold shadow" style="background:#173A66;">
-                Assignment
-            </a>
+            
         </div>
     </div>
 
