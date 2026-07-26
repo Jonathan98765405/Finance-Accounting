@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AccountsPayableController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\BillController;
+use App\Http\Controllers\Api\PublicDemoController;
 
 // NOTE: The old top-level route to PurchaseOrderSyncController was removed —
 // it pointed at a controller that doesn't exist yet and duplicated the
@@ -14,6 +15,12 @@ use App\Http\Controllers\Api\BillController;
 //   FINANCE_API_URL = http://finance-accounting.test/api/v1/ap
 //
 // (Procurement's syncToAP() appends "/purchase-orders/sync" itself.)
+
+// ================= PUBLIC DEMO ROUTE (no auth) =================
+// For presentation/testing purposes only — visiting this URL directly
+// in a browser prints the JSON straight to the page, no login/token
+// required. Separate from the secured /v1/ap/... routes below.
+Route::get('/sample/invoices', [PublicDemoController::class, 'invoices'])->name('api.sample.invoices');
 
 // Public Authentication Route
 Route::post('/v1/login', [AuthController::class, 'login']);
