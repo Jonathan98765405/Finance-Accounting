@@ -136,35 +136,39 @@
                     <i class="fa-solid fa-plus mr-1"></i> add assignment
                 </button>
             </div>
-            <div class="space-y-3 text-sm">
-                <div>
-                    <div class="text-xs text-gray-400 mb-1">Assigned To</div>
-                    <div class="flex items-center gap-2">
-                        <span class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style="background:#3B82F6;">JD</span>
-                        <span class="font-medium text-gray-700">Juan Dela Cruz</span>
+            @if ($assignment)
+                <div class="space-y-3 text-sm">
+                    <div>
+                        <div class="text-xs text-gray-400 mb-1">Assigned To</div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style="background:#3B82F6;">{{ $assignment->initials }}</span>
+                            <span class="font-medium text-gray-700">{{ $assignment->assigned_to }}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-400">Department</div>
+                        <div class="font-medium text-gray-700">{{ $assignment->department ?? '-' }}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-400">Location</div>
+                        <div class="font-medium text-gray-700">{{ $assignment->location ?? '-' }}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-400">Date Assigned</div>
+                        <div class="font-medium text-gray-700">{{ $assignment->date_assigned->format('M d, Y') }}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-400">Cost Center</div>
+                        <div class="font-medium text-gray-700">{{ $assignment->cost_center ?? '-' }}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-400">Remarks</div>
+                        <div class="font-medium text-gray-700">{{ $assignment->remarks ?? '-' }}</div>
                     </div>
                 </div>
-                <div>
-                    <div class="text-xs text-gray-400">Department</div>
-                    <div class="font-medium text-gray-700">IT Department</div>
-                </div>
-                <div>
-                    <div class="text-xs text-gray-400">Location</div>
-                    <div class="font-medium text-gray-700">{{ $assetData['location'] }}</div>
-                </div>
-                <div>
-                    <div class="text-xs text-gray-400">Date Assigned</div>
-                    <div class="font-medium text-gray-700">{{ $assetData['purchase_date'] }}</div>
-                </div>
-                <div>
-                    <div class="text-xs text-gray-400">Cost Center</div>
-                    <div class="font-medium text-gray-700">IT-100</div>
-                </div>
-                <div>
-                    <div class="text-xs text-gray-400">Remarks</div>
-                    <div class="font-medium text-gray-700">{{ $assetData['description'] }}</div>
-                </div>
-            </div>
+            @else
+                <p class="text-sm text-gray-400">This asset is not yet assigned to anyone.</p>
+            @endif
         </div>
 
         {{-- Maintenance Schedule --}}
@@ -249,29 +253,21 @@
                 <button type="button" onclick="document.getElementById('timelineModal').classList.remove('hidden')" class="text-xs font-medium" style="color:#3B82F6;">View All</button>
             </div>
             <ul class="space-y-4">
-                @php
-                    $timeline = [
-                        ['date' => $assetData['purchase_date'], 'title' => 'Asset Registered', 'desc' => $assetData['name'] . ' added to inventory', 'done' => true],
-                        ['date' => 'June 15, 2024', 'title' => 'Assigned to IT Department', 'desc' => 'Assigned to Juan Dela Cruz', 'done' => true],
-                        ['date' => 'October 15, 2024', 'title' => 'Preventive Maintenance', 'desc' => 'System cleaning and optimization', 'done' => true],
-                        ['date' => '', 'title' => 'Upcoming Maintenance', 'desc' => 'Next preventive maintenance schedule', 'done' => false],
-                    ];
-                @endphp
-                @foreach ($timeline as $t)
+                @forelse ($timeline->take(4) as $t)
                     <li class="flex gap-3">
                         <span class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-                              style="background: {{ $t['done'] ? '#22B57A' : '#F5A623' }};">
-                            <i class="fa-solid {{ $t['done'] ? 'fa-check' : 'fa-clock' }} text-white" style="font-size:9px;"></i>
+                              style="background: {{ $t['color'] }};">
+                            <i class="fa-solid fa-{{ $t['icon'] }} text-white" style="font-size:9px;"></i>
                         </span>
                         <div class="text-sm">
                             <div class="font-medium text-gray-700">{{ $t['title'] }}</div>
-                            @if ($t['date'])
-                                <div class="text-xs text-gray-400">{{ $t['date'] }}</div>
-                            @endif
+                            <div class="text-xs text-gray-400">{{ $t['date'] }}</div>
                             <div class="text-xs text-gray-500 mt-0.5">{{ $t['desc'] }}</div>
                         </div>
                     </li>
-                @endforeach
+                @empty
+                    <li class="text-sm text-gray-400">No activity recorded yet for this asset.</li>
+                @endforelse
             </ul>
         </div>
 
@@ -432,7 +428,7 @@
         <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[85vh] overflow-y-auto p-6">
 
             <div class="text-sm mb-2">
-                <a href="{{ url('/fixed-assets/assignment') }}" class="font-medium" style="color:#3B82F6;">Asset Assignment &amp; Maintenance</a>
+                <a href="{{ url('/fixed-assets/assignment/' . $asset->asset_id) }}" class="font-medium" style="color:#3B82F6;">Asset Assignment &amp; Maintenance</a>
                 <span class="text-gray-400 mx-1.5">&gt;</span>
                 <span class="text-gray-500">Asset Timeline</span>
             </div>
@@ -440,7 +436,7 @@
             <div class="flex items-start justify-between mb-4">
                 <div>
                     <h2 class="text-2xl font-bold" style="color:#173A66;">Asset Timeline</h2>
-                    <p class="text-gray-500 text-sm mt-1">view the complete history and important of the selected asset.</p>
+                    <p class="text-gray-500 text-sm mt-1">Complete activity history for this asset.</p>
                 </div>
                 <button type="button" onclick="document.getElementById('timelineModal').classList.add('hidden')"
                         class="px-4 py-2 rounded-md border border-gray-300 text-sm font-medium text-gray-700 bg-white shadow-sm hover:bg-gray-50 whitespace-nowrap">
@@ -452,47 +448,26 @@
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="text-left text-gray-600" style="background:#EEF0FA;">
-                            <th class="px-4 py-3 font-medium">Date/Time</th>
+                            <th class="px-4 py-3 font-medium">Date</th>
                             <th class="px-4 py-3 font-medium">Event</th>
                             <th class="px-4 py-3 font-medium">Description</th>
-                            <th class="px-4 py-3 font-medium">Performed By</th>
-                            <th class="px-4 py-3 font-medium">Reference No.</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @php
-                            $timelineFull = [
-                                ['date' => 'January 15, 2024',  'event' => 'Asset Registered',        'desc' => 'Dell Latitude 5400 was added to the system.', 'by' => 'Admin User',   'ref' => 'AST-2024-0001'],
-                                ['date' => 'June 15, 2024',      'event' => 'Assign to Department',    'desc' => 'Assigned to Juan Dela Cruz.',                 'by' => 'Admin User',   'ref' => 'ASN-2024-0012'],
-                                ['date' => 'October 15, 2024',   'event' => 'Relocation',              'desc' => 'Upcoming Maintenance',                        'by' => 'Admin User',   'ref' => 'REL-2024-0010'],
-                                ['date' => 'March 05, 2024',     'event' => 'Inspection',              'desc' => 'Routine inspection Completed',                 'by' => 'Tech Solution','ref' => 'INS-2024-0015'],
-                                ['date' => 'June 20, 2024',      'event' => 'Preventive Maintenance',  'desc' => 'System cleaning and optimization completed',  'by' => 'Tech Solution','ref' => 'MTN-2024-0045'],
-                                ['date' => 'July 12, 2024',      'event' => 'Reassigned',              'desc' => 'Reassigned to Mark Anthony',                   'by' => 'Admin User',   'ref' => 'ASN-2024-0088'],
-                                ['date' => 'September 03, 2024', 'event' => 'Repair',                  'desc' => 'Battery replaced due to performance issue',    'by' => 'Tech Solution','ref' => 'REP-2024-0111'],
-                                ['date' => 'November 18, 2024',  'event' => 'Information Update',      'desc' => 'Warranty information updated',                 'by' => 'Admin User',   'ref' => 'UPD-2024-0092'],
-                            ];
-                        @endphp
-                        @foreach ($timelineFull as $t)
+                        @forelse ($timeline as $t)
                             <tr class="border-b border-gray-50 hover:bg-gray-50">
                                 <td class="px-4 py-3 font-medium" style="color:#173A66;">{{ $t['date'] }}</td>
-                                <td class="px-4 py-3 text-gray-700">{{ $t['event'] }}</td>
+                                <td class="px-4 py-3 text-gray-700">{{ $t['title'] }}</td>
                                 <td class="px-4 py-3 text-gray-500">{{ $t['desc'] }}</td>
-                                <td class="px-4 py-3 text-gray-500">{{ $t['by'] }}</td>
-                                <td class="px-4 py-3 text-gray-500">{{ $t['ref'] }}</td>
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr><td colspan="3" class="px-4 py-6 text-center text-gray-400">No activity recorded yet for this asset.</td></tr>
+                        @endforelse
                     </tbody>
                 </table>
 
                 <div class="flex items-center justify-between px-4 py-3 text-xs text-gray-400">
-                    <span>Showing 1 to 13 of 13 entries</span>
-                    <div class="flex gap-1">
-                        <button class="w-7 h-7 rounded-md text-white text-xs" style="background:#173A66;">1</button>
-                        <button class="w-7 h-7 rounded-md border border-gray-200 text-xs">2</button>
-                        <button class="w-7 h-7 rounded-md border border-gray-200 text-xs">3</button>
-                        <span class="px-1">...</span>
-                        <button class="w-7 h-7 rounded-md border border-gray-200 text-xs">13</button>
-                    </div>
+                    <span>Showing {{ $timeline->count() }} of {{ $timeline->count() }} entries</span>
                 </div>
             </div>
         </div>

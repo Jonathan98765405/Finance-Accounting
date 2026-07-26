@@ -264,6 +264,9 @@ Route::get('/fixed-assets/documents/{documentId}/download', [FixedAssetControlle
 Route::post('/fixed-assets/documents/{documentId}/delete', [FixedAssetController::class, 'deleteDocument'])
     ->name('fixed-assets.documents.delete');
 
+Route::post('/fixed-assets/{id}/assignment', [FixedAssetController::class, 'storeAssignment'])
+    ->name('fixed-assets.assignment.store');
+
  /*
 |--------------------------------------------------------------------------
 | Account Receivable

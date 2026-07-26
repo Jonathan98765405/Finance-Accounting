@@ -6,6 +6,7 @@ use App\Models\FixedAssets\FixedAsset;
 use App\Models\FixedAssets\AssetCategory;
 use App\Models\FixedAssets\ActivityLog;
 use App\Models\FixedAssets\Document;
+use App\Models\FixedAssets\Assignment;
 use App\Services\GeneralLedgerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -95,6 +96,7 @@ class FixedAssetController extends Controller
             'updated'  => ['icon' => 'pencil',    'color' => '#3B82F6'],
             'deleted'  => ['icon' => 'trash-2',   'color' => '#EF4444'],
             'disposed' => ['icon' => 'archive',   'color' => '#F5A623'],
+            'assigned' => ['icon' => 'user-plus', 'color' => '#3B82F6'],
         ];
 
         $recentActivities = Schema::hasTable('fa_activity_logs')
@@ -175,8 +177,9 @@ class FixedAssetController extends Controller
         $this->gl->postAssetAcquisition($asset);
 
         ActivityLog::create([
+            'asset_id' => $asset->asset_id,
             'action' => 'created',
-            'description' => "New asset {$asset->asset_name} added",
+            'description' => "{$asset->asset_name} added to inventory",
             'performed_by' => $this->actor(),
         ]);
 
@@ -214,12 +217,74 @@ class FixedAssetController extends Controller
             'description' => $asset->description ?? '-',
         ];
 
-        // ✅ Totoong documents mula sa database, hindi na hardcoded
         $documents = Schema::hasTable('fa_documents')
             ? Document::where('asset_id', $asset->asset_id)->orderByDesc('created_at')->get()
             : collect();
 
-        return view('fixed-assets.assignment', compact('asset', 'assetData', 'documents'));
+        $timelineIconMap = [
+            'created'  => ['icon' => 'check', 'color' => '#22B57A', 'done' => true],
+            'updated'  => ['icon' => 'pen',   'color' => '#3B82F6', 'done' => true],
+            'deleted'  => ['icon' => 'xmark', 'color' => '#EF4444', 'done' => true],
+            'disposed' => ['icon' => 'box',   'color' => '#F5A623', 'done' => true],
+            'assigned' => ['icon' => 'user',  'color' => '#3B82F6', 'done' => true],
+        ];
+
+        $timeline = Schema::hasTable('fa_activity_logs')
+            ? ActivityLog::where('asset_id', $asset->asset_id)
+                ->orderByDesc('created_at')
+                ->get()
+                ->map(function ($log) use ($timelineIconMap) {
+                    $meta = $timelineIconMap[$log->action] ?? ['icon' => 'info', 'color' => '#6B7280', 'done' => true];
+                    return [
+                        'date' => $log->created_at->format('M d, Y'),
+                        'title' => ucfirst($log->action),
+                        'desc' => $log->description,
+                        'icon' => $meta['icon'],
+                        'color' => $meta['color'],
+                        'done' => $meta['done'],
+                    ];
+                })
+            : collect();
+
+        // ✅ Totoong pinakahuling Assignment record ng asset na ito
+        $assignment = Schema::hasTable('fa_assignments')
+            ? Assignment::where('asset_id', $asset->asset_id)->orderByDesc('date_assigned')->first()
+            : null;
+
+        return view('fixed-assets.assignment', compact('asset', 'assetData', 'documents', 'timeline', 'assignment'));
+    }
+
+    public function storeAssignment(Request $request, $id)
+    {
+        $asset = FixedAsset::findOrFail($id);
+
+        $validated = $request->validate([
+            'assigned_to' => 'required|string|max:150',
+            'department' => 'nullable|string|max:100',
+            'location' => 'nullable|string|max:100',
+            'date_assigned' => 'required|date',
+            'cost_center' => 'nullable|string|max:50',
+            'remarks' => 'nullable|string|max:255',
+        ]);
+
+        Assignment::create([
+            'asset_id' => $asset->asset_id,
+            'assigned_to' => $validated['assigned_to'],
+            'department' => $validated['department'] ?? null,
+            'location' => $validated['location'] ?? null,
+            'date_assigned' => $validated['date_assigned'],
+            'cost_center' => $validated['cost_center'] ?? null,
+            'remarks' => $validated['remarks'] ?? null,
+        ]);
+
+        ActivityLog::create([
+            'asset_id' => $asset->asset_id,
+            'action' => 'assigned',
+            'description' => "{$asset->asset_name} assigned to {$validated['assigned_to']}",
+            'performed_by' => $this->actor(),
+        ]);
+
+        return redirect('/fixed-assets/assignment/' . $asset->asset_id)->with('success', 'Asset assigned successfully!');
     }
 
     public function edit($id)
@@ -266,8 +331,9 @@ class FixedAssetController extends Controller
         ]);
 
         ActivityLog::create([
+            'asset_id' => $asset->asset_id,
             'action' => 'updated',
-            'description' => "Asset {$asset->asset_name} updated",
+            'description' => "{$asset->asset_name} details updated",
             'performed_by' => $this->actor(),
         ]);
 
@@ -284,6 +350,7 @@ class FixedAssetController extends Controller
         $asset->delete();
 
         ActivityLog::create([
+            'asset_id' => null,
             'action' => 'deleted',
             'description' => "Asset {$assetName} deleted",
             'performed_by' => $this->actor(),
@@ -321,8 +388,9 @@ class FixedAssetController extends Controller
         $this->gl->postDisposal($asset->fresh());
 
         ActivityLog::create([
+            'asset_id' => $asset->asset_id,
             'action' => 'disposed',
-            'description' => "Asset {$asset->asset_name} disposed",
+            'description' => "{$asset->asset_name} disposed ({$validated['disposal_reason']})",
             'performed_by' => $this->actor(),
         ]);
 
@@ -336,7 +404,7 @@ class FixedAssetController extends Controller
         $asset = FixedAsset::findOrFail($id);
 
         $validated = $request->validate([
-            'file' => 'required|file|max:10240', // max 10MB
+            'file' => 'required|file|max:10240',
             'type' => 'required|in:Purchase,Warranty,Manual,Maintenance,Depreciation,Insurance,Asset transfer form,Other',
             'description' => 'nullable|string|max:255',
         ]);
