@@ -267,6 +267,12 @@ Route::post('/fixed-assets/documents/{documentId}/delete', [FixedAssetController
 Route::post('/fixed-assets/{id}/assignment', [FixedAssetController::class, 'storeAssignment'])
     ->name('fixed-assets.assignment.store');
 
+Route::post('/fixed-assets/maintenance/{maintenanceId}/complete', [FixedAssetController::class, 'completeMaintenance'])
+    ->name('fixed-assets.maintenance.complete');
+
+Route::post('/fixed-assets/{id}/maintenance', [FixedAssetController::class, 'storeMaintenance'])
+    ->name('fixed-assets.maintenance.store');
+
  /*
 |--------------------------------------------------------------------------
 | Account Receivable

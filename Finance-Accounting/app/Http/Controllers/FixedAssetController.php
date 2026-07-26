@@ -7,6 +7,7 @@ use App\Models\FixedAssets\AssetCategory;
 use App\Models\FixedAssets\ActivityLog;
 use App\Models\FixedAssets\Document;
 use App\Models\FixedAssets\Assignment;
+use App\Models\FixedAssets\Maintenance;
 use App\Services\GeneralLedgerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -217,6 +218,27 @@ class FixedAssetController extends Controller
             'description' => $asset->description ?? '-',
         ];
 
+        // ✅ Totoong Maintenance records ng asset na ito
+        $maintenanceRecords = Schema::hasTable('fa_maintenance_records')
+            ? Maintenance::where('asset_id', $asset->asset_id)->get()
+            : collect();
+
+        $upcomingMaintenance = $maintenanceRecords->where('status', 'scheduled')
+            ->sortBy('scheduled_date')
+            ->values();
+
+        $maintenanceHistory = $maintenanceRecords->where('status', 'completed')
+            ->sortByDesc('completed_date')
+            ->values();
+
+        $nextMaintenance = $upcomingMaintenance->first();
+        $lastMaintenance = $maintenanceHistory->first();
+
+        $totalMaintenanceCost = $maintenanceHistory->sum(fn ($m) => $m->actual_cost ?? $m->estimated_cost ?? 0);
+
+        $assetData['last_maintenance'] = $lastMaintenance ? $lastMaintenance->completed_date->format('M d, Y') : '-';
+        $assetData['next_maintenance'] = $nextMaintenance ? $nextMaintenance->scheduled_date->format('M d, Y') : '-';
+
         $documents = Schema::hasTable('fa_documents')
             ? Document::where('asset_id', $asset->asset_id)->orderByDesc('created_at')->get()
             : collect();
@@ -251,7 +273,10 @@ class FixedAssetController extends Controller
             ? Assignment::where('asset_id', $asset->asset_id)->orderByDesc('date_assigned')->first()
             : null;
 
-        return view('fixed-assets.assignment', compact('asset', 'assetData', 'documents', 'timeline', 'assignment'));
+        return view('fixed-assets.assignment', compact(
+            'asset', 'assetData', 'documents', 'timeline', 'assignment',
+            'upcomingMaintenance', 'maintenanceHistory', 'nextMaintenance', 'totalMaintenanceCost'
+        ));
     }
 
     public function storeAssignment(Request $request, $id)
@@ -285,6 +310,64 @@ class FixedAssetController extends Controller
         ]);
 
         return redirect('/fixed-assets/assignment/' . $asset->asset_id)->with('success', 'Asset assigned successfully!');
+    }
+
+    public function storeMaintenance(Request $request, $id)
+    {
+        $asset = FixedAsset::findOrFail($id);
+
+        $validated = $request->validate([
+            'maintenance_type' => 'required|string|max:100',
+            'technician' => 'nullable|string|max:150',
+            'priority' => 'nullable|in:Low,Medium,High',
+            'estimated_cost' => 'nullable|numeric|min:0',
+            'scheduled_date' => 'required|date',
+            'description' => 'nullable|string|max:255',
+        ]);
+
+        Maintenance::create([
+            'asset_id' => $asset->asset_id,
+            'maintenance_type' => $validated['maintenance_type'],
+            'technician' => $validated['technician'] ?? null,
+            'priority' => $validated['priority'] ?? 'Medium',
+            'estimated_cost' => $validated['estimated_cost'] ?? null,
+            'scheduled_date' => $validated['scheduled_date'],
+            'description' => $validated['description'] ?? null,
+            'status' => 'scheduled',
+        ]);
+
+        ActivityLog::create([
+            'asset_id' => $asset->asset_id,
+            'action' => 'updated',
+            'description' => "Maintenance scheduled for {$asset->asset_name}",
+            'performed_by' => $this->actor(),
+        ]);
+
+        return redirect('/fixed-assets/assignment/' . $asset->asset_id)->with('success', 'Maintenance scheduled successfully!');
+    }
+
+    public function completeMaintenance(Request $request, $maintenanceId)
+    {
+        $maintenance = Maintenance::findOrFail($maintenanceId);
+
+        $validated = $request->validate([
+            'actual_cost' => 'nullable|numeric|min:0',
+        ]);
+
+        $maintenance->update([
+            'status' => 'completed',
+            'completed_date' => now()->format('Y-m-d'),
+            'actual_cost' => $validated['actual_cost'] ?? $maintenance->estimated_cost,
+        ]);
+
+        ActivityLog::create([
+            'asset_id' => $maintenance->asset_id,
+            'action' => 'updated',
+            'description' => "Maintenance ({$maintenance->maintenance_type}) marked as completed",
+            'performed_by' => $this->actor(),
+        ]);
+
+        return redirect('/fixed-assets/assignment/' . $maintenance->asset_id)->with('success', 'Maintenance marked as completed!');
     }
 
     public function edit($id)

@@ -120,11 +120,11 @@
                 </div>
                 <div class="flex items-center justify-between">
                     <span class="text-gray-500">Last Maintenance</span>
-                    <span class="font-medium text-gray-700">June 20, 2025</span>
+                    <span class="font-medium text-gray-700">{{ $assetData['last_maintenance'] }}</span>
                 </div>
                 <div class="flex items-center justify-between">
                     <span class="text-gray-500">Next Maintenance</span>
-                    <span class="font-medium text-gray-700">December 20, 2025</span>
+                    <span class="font-medium text-gray-700">{{ $assetData['next_maintenance'] }}</span>
                 </div>
             </div>
         </div>
@@ -181,39 +181,66 @@
 
         {{-- Maintenance Schedule --}}
         <div class="bg-white rounded-lg border border-gray-200 p-5">
-            <h3 class="flex items-center gap-2 font-bold mb-4" style="color:#173A66;">
-                <i class="fa-solid fa-screwdriver-wrench"></i> Maintenance Schedule
-            </h3>
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="flex items-center gap-2 font-bold" style="color:#173A66;">
+                    <i class="fa-solid fa-screwdriver-wrench"></i> Maintenance Schedule
+                </h3>
+                <button type="button" onclick="document.getElementById('maintenanceModal').classList.remove('hidden')"
+                        class="text-xs font-medium px-2.5 py-1 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50">
+                    <i class="fa-solid fa-plus mr-1"></i> add
+                </button>
+            </div>
 
             <div class="rounded-md p-3 mb-4" style="background:#FFF4E5;border:1px solid #FBD9A5;">
-                <div class="text-xs font-semibold" style="color:#B45309;">Next Maintenance</div>
-                <div class="font-bold mb-2" style="color:#173A66;">December 20, 2025</div>
-                <div class="grid grid-cols-2 gap-y-1.5 text-xs text-gray-600">
-                    <div>Maintenance Type</div><div class="text-right font-medium text-gray-700">Preventive Maintenance</div>
-                    <div>Technician</div><div class="text-right font-medium text-gray-700">Mel Paul Torres</div>
-                    <div>Priority</div><div class="text-right font-medium text-gray-700">Medium</div>
-                    <div>Estimated Cost</div><div class="text-right font-medium text-gray-700">₱45.00</div>
-                </div>
+                @if ($nextMaintenance)
+                    <div class="text-xs font-semibold" style="color:#B45309;">Next Maintenance</div>
+                    <div class="font-bold mb-2" style="color:#173A66;">{{ $nextMaintenance->scheduled_date->format('M d, Y') }}</div>
+                    <div class="space-y-1.5 text-xs text-gray-600">
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="shrink-0">Maintenance Type</span>
+                            <span class="text-right font-medium text-gray-700">{{ $nextMaintenance->maintenance_type }}</span>
+                        </div>
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="shrink-0">Technician</span>
+                            <span class="text-right font-medium text-gray-700">{{ $nextMaintenance->technician ?? '-' }}</span>
+                        </div>
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="shrink-0">Priority</span>
+                            <span class="text-right font-medium text-gray-700">{{ $nextMaintenance->priority ?? '-' }}</span>
+                        </div>
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="shrink-0">Estimated Cost</span>
+                            <span class="text-right font-medium text-gray-700">{{ $nextMaintenance->estimated_cost !== null ? '₱' . number_format($nextMaintenance->estimated_cost, 2) : '-' }}</span>
+                        </div>
+                    </div>
+                @else
+                    <div class="text-xs font-semibold" style="color:#B45309;">Next Maintenance</div>
+                    <div class="text-sm text-gray-400 mt-1">No upcoming maintenance scheduled.</div>
+                @endif
             </div>
 
             <div class="text-xs font-semibold text-gray-500 mb-2">Upcoming Schedules</div>
             <ul class="space-y-2">
-                @php
-                    $upcoming = [
-                        ['date' => 'June 20, 2025', 'type' => 'Preventive Maintenance'],
-                        ['date' => 'August 8, 2025', 'type' => 'Preventive Maintenance'],
-                        ['date' => 'December 15, 2025', 'type' => 'Preventive Maintenance'],
-                    ];
-                @endphp
-                @foreach ($upcoming as $u)
-                    <li class="flex items-center gap-2 text-xs">
-                        <span class="w-5 h-5 rounded-md flex items-center justify-center shrink-0" style="background:#DBEAFE;">
+                @forelse ($upcomingMaintenance as $u)
+                    <li class="flex items-start gap-2 text-xs">
+                        <span class="w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5" style="background:#DBEAFE;">
                             <i class="fa-solid fa-calendar-days text-blue-500" style="font-size:9px;"></i>
                         </span>
-                        <span class="font-medium text-gray-700">{{ $u['date'] }}</span>
-                        <span class="text-gray-400">{{ $u['type'] }}</span>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-medium text-gray-700">{{ $u->scheduled_date->format('M d, Y') }}</div>
+                            <div class="text-gray-400">{{ $u->maintenance_type }}</div>
+                        </div>
+                        <form action="{{ route('fixed-assets.maintenance.complete', $u->id) }}" method="POST"
+                              onsubmit="return confirm('Mark this maintenance as completed?');">
+                            @csrf
+                            <button type="submit" class="text-green-500 hover:text-green-700 mt-0.5" title="Mark as completed">
+                                <i class="fa-solid fa-check"></i>
+                            </button>
+                        </form>
                     </li>
-                @endforeach
+                @empty
+                    <li class="text-xs text-gray-400">No upcoming schedules.</li>
+                @endforelse
             </ul>
         </div>
 
@@ -223,28 +250,23 @@
                 <i class="fa-solid fa-clock-rotate-left"></i> Maintenance History
             </h3>
             <div class="space-y-3">
-                @php
-                    $history = [
-                        ['date' => 'June 20, 2025', 'type' => 'Preventive Maintenance', 'tech' => 'Mel Paul Torres', 'desc' => 'System check and optimization', 'cost' => '₱50.00', 'status' => 'Completed'],
-                        ['date' => 'September 12, 2024', 'type' => 'Repaired Part', 'tech' => 'Mel Paul Torres', 'desc' => 'General check up', 'cost' => '₱1,200.00', 'status' => 'Completed'],
-                        ['date' => 'March 5, 2024', 'type' => 'Setup', 'tech' => 'Mel Paul Torres', 'desc' => 'Initial setup and configuration', 'cost' => '₱450.00', 'status' => 'Completed'],
-                    ];
-                @endphp
-                @foreach ($history as $h)
+                @forelse ($maintenanceHistory as $h)
                     <div class="text-xs border-b border-gray-50 pb-2.5">
-                        <div class="flex items-center justify-between">
-                            <span class="font-medium text-gray-700">{{ $h['date'] }}</span>
-                            <span class="px-2 py-0.5 rounded-full font-medium" style="background:#D6F5DF;color:#16A34A;">{{ $h['status'] }}</span>
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="font-medium text-gray-700">{{ $h->completed_date ? $h->completed_date->format('M d, Y') : '-' }}</span>
+                            <span class="px-2 py-0.5 rounded-full font-medium whitespace-nowrap" style="background:#D6F5DF;color:#16A34A;">Completed</span>
                         </div>
-                        <div class="text-gray-500 mt-0.5">{{ $h['type'] }} &middot; {{ $h['tech'] }}</div>
-                        <div class="text-gray-400">{{ $h['desc'] }}</div>
-                        <div class="text-gray-700 font-medium mt-0.5">{{ $h['cost'] }}</div>
+                        <div class="text-gray-500 mt-0.5">{{ $h->maintenance_type }} &middot; {{ $h->technician ?? '-' }}</div>
+                        <div class="text-gray-400">{{ $h->description ?? '-' }}</div>
+                        <div class="text-gray-700 font-medium mt-0.5">₱{{ number_format($h->actual_cost ?? $h->estimated_cost ?? 0, 2) }}</div>
                     </div>
-                @endforeach
+                @empty
+                    <div class="text-xs text-gray-400">No maintenance history yet.</div>
+                @endforelse
             </div>
             <div class="mt-3 flex items-center justify-between rounded-md px-3 py-2 text-sm font-semibold" style="background:#EEF0FA;color:#173A66;">
                 <span>Total Maintenance Cost</span>
-                <span>₱1,700.00</span>
+                <span>₱{{ number_format($totalMaintenanceCost, 2) }}</span>
             </div>
         </div>
     </div>
@@ -461,6 +483,86 @@
         </div>
     </div>
 
+    {{-- ============ ADD MAINTENANCE MODAL ============ --}}
+    <div id="maintenanceModal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+         onclick="if(event.target===this) this.classList.add('hidden')">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+            <div class="flex items-start justify-between gap-4 mb-4">
+                <div>
+                    <h2 class="text-2xl font-bold" style="color:#173A66;">Schedule Maintenance</h2>
+                    <p class="text-sm text-gray-500 mt-1">Fill the maintenance details and click save to schedule.</p>
+                </div>
+                <button type="button" onclick="document.getElementById('maintenanceModal').classList.add('hidden')"
+                        class="px-4 py-2 rounded-md border border-gray-300 text-sm font-medium text-gray-700 bg-white shadow-sm hover:bg-gray-50">
+                    Close
+                </button>
+            </div>
+
+            @if ($errors->any() && old('_form') === 'maintenance')
+                <div class="rounded-md p-3 mb-4" style="background:#FEE2E2;color:#DC2626;">
+                    <strong>May mga kulang o maling laman sa form:</strong>
+                    <ul class="list-disc ml-5 mt-1">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <form action="{{ route('fixed-assets.maintenance.store', $asset->asset_id) }}" method="POST" class="grid gap-4">
+                @csrf
+                <input type="hidden" name="_form" value="maintenance">
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-2">Maintenance Type <span class="text-red-500">*</span></label>
+                        <input type="text" name="maintenance_type" value="{{ old('maintenance_type') }}" required
+                               class="w-full rounded-md border border-gray-200 px-3 py-2 text-sm" placeholder="e.g. Preventive Maintenance" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-2">Technician</label>
+                        <input type="text" name="technician" value="{{ old('technician') }}"
+                               class="w-full rounded-md border border-gray-200 px-3 py-2 text-sm" placeholder="Technician name" />
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-2">Scheduled Date <span class="text-red-500">*</span></label>
+                        <input type="date" name="scheduled_date" value="{{ old('scheduled_date') }}" required
+                               class="w-full rounded-md border border-gray-200 px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-2">Priority</label>
+                        <select name="priority" class="w-full rounded-md border border-gray-200 px-3 py-2 text-sm">
+                            <option value="Low" {{ old('priority') === 'Low' ? 'selected' : '' }}>Low</option>
+                            <option value="Medium" {{ old('priority', 'Medium') === 'Medium' ? 'selected' : '' }}>Medium</option>
+                            <option value="High" {{ old('priority') === 'High' ? 'selected' : '' }}>High</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 mb-2">Estimated Cost</label>
+                    <input type="number" step="0.01" name="estimated_cost" value="{{ old('estimated_cost') }}"
+                           class="w-full rounded-md border border-gray-200 px-3 py-2 text-sm" placeholder="0.00" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 mb-2">Description</label>
+                    <textarea name="description" class="w-full rounded-md border border-gray-200 px-3 py-2 text-sm" rows="3" placeholder="Enter maintenance notes">{{ old('description') }}</textarea>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="document.getElementById('maintenanceModal').classList.add('hidden')"
+                            class="rounded-md border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 bg-white hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="rounded-md bg-[#22B57A] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#1f965f]">
+                        Save Schedule
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     {{-- ============ ASSET TIMELINE MODAL ============ --}}
     <div id="timelineModal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
          onclick="if(event.target===this) this.classList.add('hidden')">
@@ -581,6 +683,14 @@
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('assignmentModal').classList.remove('hidden');
+            });
+        </script>
+    @endif
+
+    @if ($errors->any() && old('_form') === 'maintenance')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                document.getElementById('maintenanceModal').classList.remove('hidden');
             });
         </script>
     @endif
