@@ -22,7 +22,7 @@ class PublicDemoController extends Controller
     {
         $invoices = Invoice::with('supplier:id,name,email')
             ->select('id', 'invoice_number', 'supplier_id', 'invoice_date', 'due_date', 'total_amount', 'status')
-            ->latest('invoice_date')
+            ->latest('id') // most recently created, not manually-entered invoice_date
             ->limit(20)
             ->get();
 
