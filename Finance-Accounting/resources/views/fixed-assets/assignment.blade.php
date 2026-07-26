@@ -8,6 +8,16 @@
 
 @section('content')
 
+    @php
+        $statusColors = [
+            'Active' => 'background:#D6F5DF;color:#16A34A;',
+            'Under Maintenance' => 'background:#F5A623;color:#FFFFFF;',
+            'Disposed' => 'background:#FEE2E2;color:#DC2626;',
+            'Fully Depreciated' => 'background:#E5E7EB;color:#374151;',
+        ];
+        $statusBadgeStyle = $statusColors[$assetData['status']] ?? 'background:#F3F4F6;color:#374151;';
+    @endphp
+
     {{-- Header --}}
     <div class="flex items-start justify-between">
         <div class="flex gap-3">
@@ -36,12 +46,10 @@
         </div>
         <div class="flex gap-3 shrink-0">
             <a href="{{ url('/fixed-assets/register') }}"
-              class="px-5 py-2 rounded-md text-white text-sm font-semibold shadow" style="background:#22B57A;">
+              class="px-5 py-2 rounded-md text-white text-sm font-semibold shadow" style="background:#173A66;">
                 Registration
             </a>
-            <button class="px-5 py-2 rounded-md text-white text-sm font-semibold shadow" style="background:#173A66;">
-                Assignment
-            </button>
+            
         </div>
     </div>
 
@@ -56,7 +64,7 @@
                     <div>
                         <div class="flex items-center gap-2">
                             <span class="font-bold" style="color:#173A66;">{{ $assetData['name'] }}</span>
-                            <span class="px-2 py-0.5 rounded-full text-xs font-medium" style="background:#D6F5DF;color:#16A34A;">{{ $assetData['status'] }}</span>
+                            <span class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap" style="{{ $statusBadgeStyle }}">{{ $assetData['status'] }}</span>
                         </div>
                     </div>
                     <div>
@@ -100,7 +108,7 @@
             <div class="space-y-3 text-sm">
                 <div class="flex items-center justify-between">
                     <span class="text-gray-500">Status</span>
-                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium" style="background:#D6F5DF;color:#16A34A;">{{ $assetData['status'] }}</span>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap" style="{{ $statusBadgeStyle }}">{{ $assetData['status'] }}</span>
                 </div>
                 <div class="flex items-center justify-between">
                     <span class="text-gray-500">Condition</span>
@@ -391,34 +399,65 @@
                 </button>
             </div>
 
-            <div class="grid gap-4">
+            @if ($errors->any() && old('_form') === 'assignment')
+                <div class="rounded-md p-3 mb-4" style="background:#FEE2E2;color:#DC2626;">
+                    <strong>May mga kulang o maling laman sa form:</strong>
+                    <ul class="list-disc ml-5 mt-1">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <form action="{{ route('fixed-assets.assignment.store', $asset->asset_id) }}" method="POST" class="grid gap-4">
+                @csrf
+                <input type="hidden" name="_form" value="assignment">
+
                 <div class="grid grid-cols-2 gap-4">
-                    <label class="block text-xs font-semibold text-gray-500">Assign to</label>
-                    <label class="block text-xs font-semibold text-gray-500">Department</label>
-                    <input type="text" class="w-full rounded-md border border-gray-200 px-3 py-2 text-sm" placeholder="Employee name" />
-                    <input type="text" class="w-full rounded-md border border-gray-200 px-3 py-2 text-sm" placeholder="Department" />
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-2">Assign to <span class="text-red-500">*</span></label>
+                        <input type="text" name="assigned_to" value="{{ old('assigned_to') }}" required
+                               class="w-full rounded-md border border-gray-200 px-3 py-2 text-sm" placeholder="Employee name" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-2">Department</label>
+                        <input type="text" name="department" value="{{ old('department') }}"
+                               class="w-full rounded-md border border-gray-200 px-3 py-2 text-sm" placeholder="Department" />
+                    </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <label class="block text-xs font-semibold text-gray-500">Location</label>
-                    <label class="block text-xs font-semibold text-gray-500">Date Assigned</label>
-                    <input type="text" class="w-full rounded-md border border-gray-200 px-3 py-2 text-sm" placeholder="Location" />
-                    <input type="date" class="w-full rounded-md border border-gray-200 px-3 py-2 text-sm" />
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-2">Location</label>
+                        <input type="text" name="location" value="{{ old('location') }}"
+                               class="w-full rounded-md border border-gray-200 px-3 py-2 text-sm" placeholder="Location" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-2">Date Assigned <span class="text-red-500">*</span></label>
+                        <input type="date" name="date_assigned" value="{{ old('date_assigned', date('Y-m-d')) }}" required
+                               class="w-full rounded-md border border-gray-200 px-3 py-2 text-sm" />
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 mb-2">Cost Center</label>
+                    <input type="text" name="cost_center" value="{{ old('cost_center') }}"
+                           class="w-full rounded-md border border-gray-200 px-3 py-2 text-sm" placeholder="Cost center" />
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 mb-2">Remarks</label>
-                    <textarea class="w-full rounded-md border border-gray-200 px-3 py-2 text-sm" rows="4" placeholder="Enter assignment notes"></textarea>
+                    <textarea name="remarks" class="w-full rounded-md border border-gray-200 px-3 py-2 text-sm" rows="4" placeholder="Enter assignment notes">{{ old('remarks') }}</textarea>
                 </div>
                 <div class="flex justify-end gap-2 pt-2">
                     <button type="button" onclick="document.getElementById('assignmentModal').classList.add('hidden')"
                             class="rounded-md border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 bg-white hover:bg-gray-50">
                         Cancel
                     </button>
-                    <button type="button" onclick="document.getElementById('assignmentModal').classList.add('hidden')"
+                    <button type="submit"
                             class="rounded-md bg-[#22B57A] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#1f965f]">
                         Assign
                     </button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
 
@@ -537,5 +576,13 @@
             </div>
         </div>
     </div>
+
+    @if ($errors->any() && old('_form') === 'assignment')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                document.getElementById('assignmentModal').classList.remove('hidden');
+            });
+        </script>
+    @endif
 
 @endsection

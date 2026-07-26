@@ -21,13 +21,10 @@
                 Back to Asset List
             </a>
             <div class="flex gap-3">
-                <button class="px-5 py-2 rounded-md text-white text-sm font-semibold shadow" style="background:#22B57A;">
+                <button class="px-5 py-2 rounded-md text-white text-sm font-semibold shadow" style="background:#173A66;">
                     Registration
                 </button>
-                <a href="{{ url('/fixed-assets/assignment') }}"
-                   class="px-5 py-2 rounded-md text-white text-sm font-semibold shadow" style="background:#173A66;">
-                    Assignment
-                </a>
+
             </div>
         </div>
     </div>
