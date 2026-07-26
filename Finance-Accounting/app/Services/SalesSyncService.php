@@ -43,6 +43,7 @@ class SalesSyncService
     public function syncCustomers(): int
     {
         $response = Http::withToken($this->token)
+            ->acceptJson()
             ->get("{$this->baseUrl}/customers");
 
         if (! $response->successful()) {
@@ -82,6 +83,7 @@ class SalesSyncService
     public function syncInvoices(): int
     {
         $response = Http::withToken($this->token)
+            ->acceptJson()
             ->get("{$this->baseUrl}/sales-invoices");
 
         if (! $response->successful()) {
@@ -196,6 +198,7 @@ class SalesSyncService
     {
         try {
             $response = Http::withToken($this->token)
+                ->acceptJson()
                 ->patch("{$this->baseUrl}/sales-invoices/{$salesInvoiceId}/mark-paid");
 
             if (! $response->successful()) {
@@ -213,6 +216,46 @@ class SalesSyncService
         } catch (\Throwable $e) {
             Log::error('Sales sync: exception while marking invoice as paid', [
                 'sales_invoice_id' => $salesInvoiceId,
+                'message' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Tell the Sales system that an invoice has received a PARTIAL payment
+     * on the Finance side, so its status (and remaining balance) stays in
+     * sync. $balance is the remaining amount still owed on this invoice
+     * after the partial payment was applied, coming from Finance's
+     * ar_invoices.balance — NOT marked "Paid" on the Sales side.
+     */
+    public function markInvoicePartial(int $salesInvoiceId, float $balance): bool
+    {
+        try {
+            $response = Http::withToken($this->token)
+                ->acceptJson()
+                ->patch("{$this->baseUrl}/sales-invoices/{$salesInvoiceId}/mark-partial", [
+                    'balance' => $balance,
+                ]);
+
+            if (! $response->successful()) {
+                Log::error('Sales sync: failed to mark invoice as partial on Sales side', [
+                    'sales_invoice_id' => $salesInvoiceId,
+                    'balance' => $balance,
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
+                return false;
+            }
+
+            return true;
+
+        } catch (\Throwable $e) {
+            Log::error('Sales sync: exception while marking invoice as partial', [
+                'sales_invoice_id' => $salesInvoiceId,
+                'balance' => $balance,
                 'message' => $e->getMessage(),
             ]);
 

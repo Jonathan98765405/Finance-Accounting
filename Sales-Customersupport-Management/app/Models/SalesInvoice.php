@@ -24,6 +24,7 @@ class SalesInvoice extends Model
         'tax_amount',
         'discount_amount',
         'total_amount',
+        'balance',
         'payment_status',
     ];
 
@@ -34,6 +35,7 @@ class SalesInvoice extends Model
         'tax_amount'   => 'decimal:2',
         'discount_amount' => 'decimal:2',
         'total_amount' => 'decimal:2',
+        'balance'      => 'decimal:2',
     ];
 
     public function customer(): BelongsTo

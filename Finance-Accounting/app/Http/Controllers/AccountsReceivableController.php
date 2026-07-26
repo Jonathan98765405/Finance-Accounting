@@ -503,6 +503,12 @@ foreach ($request->invoice_id as $invoiceId) {
             'status' => 'Partial'
         ]);
 
+        // Same as above but for a partial payment — Sales should reflect
+        // the accurate remaining balance, not just "still unpaid".
+        if ($invoice->sales_invoice_id) {
+            $this->salesSync->markInvoicePartial($invoice->sales_invoice_id, $newBalance);
+        }
+
     }
 
 

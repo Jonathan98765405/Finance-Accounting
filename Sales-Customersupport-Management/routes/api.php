@@ -18,6 +18,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/ar/invoices', [SalesInvoiceApiController::class, 'unpaidInvoices']);
         Route::get('/ar/aging-summary', [SalesInvoiceApiController::class, 'agingSummary']);
         Route::patch('/sales-invoices/{salesInvoice}/mark-paid', [SalesInvoiceApiController::class, 'markPaid']);
+        Route::patch('/sales-invoices/{salesInvoice}/mark-partial', [SalesInvoiceApiController::class, 'markPartial']);
     });
 
 });
