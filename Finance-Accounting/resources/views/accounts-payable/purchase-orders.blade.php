@@ -15,12 +15,6 @@
             Record Goods Receipt
         </a>
 
-        <a href="{{ route('ap.po.create') }}" 
-           class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-green hover:bg-brand-greenDark text-white px-4 py-2.5 text-sm font-semibold shadow-sm transition">
-            <i data-lucide="plus" class="w-4 h-4"></i>
-            New Purchase Order
-        </a>
-
     </div>
 
     @if (session('success'))
@@ -120,11 +114,13 @@
                                             <i data-lucide="eye" class="w-3.5 h-3.5"></i>
                                         </button>
 
-                                        <a href="{{ route('ap.po.edit', $po) }}"
-                                           title="Edit purchase order"
-                                           class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 hover:border-navy text-slate-500 hover:text-navy transition">
-                                            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
-                                        </a>
+                                        @if ($po->status !== 'received')
+                                            <a href="{{ route('ap.po.edit', $po) }}"
+                                               title="Edit purchase order"
+                                               class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 hover:border-navy text-slate-500 hover:text-navy transition">
+                                                <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                                            </a>
+                                        @endif
 
                                         <button type="button"
                                                 onclick="openDeleteConfirm('{{ route('ap.po.destroy', $po) }}', '{{ $po->po_number }}')"
@@ -247,11 +243,13 @@
                         class="rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-4 py-2 text-sm font-semibold transition">
                     Close
                 </button>
-                <a href="{{ route('ap.po.edit', $po) }}"
-                   class="inline-flex items-center gap-1.5 rounded-lg bg-brand-green hover:bg-brand-greenDark text-white px-4 py-2 text-sm font-semibold transition">
-                    <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
-                    Edit
-                </a>
+                @if ($po->status !== 'received')
+                    <a href="{{ route('ap.po.edit', $po) }}"
+                       class="inline-flex items-center gap-1.5 rounded-lg bg-brand-green hover:bg-brand-greenDark text-white px-4 py-2 text-sm font-semibold transition">
+                        <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                        Edit
+                    </a>
+                @endif
             </div>
 
         </div>

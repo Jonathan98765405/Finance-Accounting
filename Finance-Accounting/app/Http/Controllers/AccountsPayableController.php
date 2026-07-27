@@ -82,7 +82,13 @@ class AccountsPayableController extends Controller
             ->withSum(['invoices as overdue' => function ($q) {
                 $q->where('due_date', '<', now())->whereNotIn('status', ['paid']);
             }], 'total_amount')
-            ->whereHas('invoices')
+            ->where(function ($q) {
+                // A vendor can be "on file" via a synced PO before an
+                // invoice is ever recorded against them, so check both —
+                // whereHas('invoices') alone was hiding freshly synced
+                // vendors that only have a PurchaseOrder so far.
+                $q->whereHas('invoices')->orWhereHas('purchaseOrders');
+            })
             ->orderByDesc('total_due')
             ->get();
 
@@ -99,7 +105,7 @@ class AccountsPayableController extends Controller
     public function createInvoice()
     {
         $suppliers = Supplier::orderBy('name')->get();
-        $purchaseOrders = PurchaseOrder::orderByDesc('po_date')->get();
+        $purchaseOrders = PurchaseOrder::with('items')->orderByDesc('po_date')->get();
 
         return view('accounts-payable.record-invoice', compact('suppliers', 'purchaseOrders'));
     }

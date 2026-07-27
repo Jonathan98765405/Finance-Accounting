@@ -108,6 +108,16 @@
                         @endforeach
                     </select>
                     <p class="text-[10px] text-slate-400 mt-0.5 leading-normal" id="poHelpText">Select a supplier to see their purchase orders.</p>
+                    {{-- Line items for each PO, keyed by po_number, used to auto-fill Invoice Details below --}}
+                    <script type="application/json" id="poItemsData">
+                        {!! json_encode($purchaseOrders->mapWithKeys(fn ($po) => [
+                            $po->po_number => $po->items->map(fn ($item) => [
+                                'description' => $item->description,
+                                'quantity' => $item->quantity,
+                                'unit_price' => $item->unit_price,
+                            ]),
+                        ])) !!}
+                    </script>
                 </div>
 
                 <div class="flex flex-col gap-1.5">
@@ -412,8 +422,81 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    poSelect.addEventListener('change', syncInvoiceNumberWithPo);
-    syncInvoiceNumberWithPo();
+    // ---------------- Auto-select the Supplier when a PO is chosen ----------------
+    // Each <option> in poSelect already carries data-supplier-id (see the
+    // loop above), so picking a PO can drive the Supplier dropdown
+    // directly instead of leaving it on "Select Supplier".
+    let suppressFilter = false;
+
+    function syncSupplierFromPo() {
+        const selected = poSelect.selectedOptions[0];
+        if (!selected || selected.value === '' || !selected.dataset.supplierId) return;
+
+        if (supplierSelect.value !== selected.dataset.supplierId) {
+            supplierSelect.value = selected.dataset.supplierId;
+            // Re-run the supplier -> PO filter, but don't let it reset
+            // poSelect back to "No PO" — the PO the user just picked
+            // now matches the supplier we just set, so it stays visible.
+            suppressFilter = true;
+            filterPoOptions();
+            suppressFilter = false;
+        }
+    }
+
+    poSelect.addEventListener('change', function () {
+        syncSupplierFromPo();
+        syncInvoiceNumberWithPo();
+        fillItemsFromPo();
+    });
+
+    // ---------------- Auto-fill Invoice Details from the selected PO's items ----------------
+    const poItemsData = JSON.parse(document.getElementById('poItemsData').textContent || '{}');
+
+    function clearItemRows() {
+        // Reset to a single blank row rather than leaving stale rows behind.
+        const tbody = document.getElementById('itemsBody');
+        tbody.querySelectorAll('tr').forEach((row, idx) => {
+            if (idx === 0) {
+                row.querySelector('.item-desc').value = '';
+                row.querySelector('.item-qty').value = 1;
+                row.querySelector('.item-price').value = '';
+                row.querySelector('.item-amount').value = '';
+            } else {
+                row.remove();
+            }
+        });
+    }
+
+    function addItemRowWithValues(description, quantity, unitPrice) {
+        document.getElementById('addItemBtn').click();
+        const rows = document.querySelectorAll('#itemsBody tr');
+        const row = rows[rows.length - 1];
+        row.querySelector('.item-desc').value = description ?? '';
+        row.querySelector('.item-qty').value = quantity ?? 1;
+        row.querySelector('.item-price').value = unitPrice ?? '';
+        row.querySelector('.item-amount').value = ((quantity || 0) * (unitPrice || 0)).toFixed(2);
+    }
+
+    function fillItemsFromPo() {
+        const items = poItemsData[poSelect.value];
+        if (!items || items.length === 0) return;
+
+        clearItemRows();
+
+        items.forEach(function (item, idx) {
+            if (idx === 0) {
+                const firstRow = document.querySelector('#itemsBody tr');
+                firstRow.querySelector('.item-desc').value = item.description ?? '';
+                firstRow.querySelector('.item-qty').value = item.quantity ?? 1;
+                firstRow.querySelector('.item-price').value = item.unit_price ?? '';
+                firstRow.querySelector('.item-amount').value = ((item.quantity || 0) * (item.unit_price || 0)).toFixed(2);
+            } else {
+                addItemRowWithValues(item.description, item.quantity, item.unit_price);
+            }
+        });
+
+        recalcTotals();
+    }
 
     function filterPoOptions() {
         const supplierId = supplierSelect.value;
@@ -427,8 +510,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         // If the currently selected PO no longer belongs to this supplier, reset to "No PO"
+        // — unless we're mid-way through syncSupplierFromPo(), where the PO
+        // is the one driving the supplier choice and should stay selected.
         const selected = poSelect.selectedOptions[0];
-        if (selected && selected.value !== '' && selected.hidden) {
+        if (!suppressFilter && selected && selected.value !== '' && selected.hidden) {
             poSelect.value = '';
         }
 
@@ -438,7 +523,14 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     supplierSelect.addEventListener('change', filterPoOptions);
+
+    // Initial page load: if a PO already comes pre-selected (e.g. arriving
+    // here from a "Record Invoice" link on a specific PO), sync the
+    // supplier to match right away instead of leaving it on the placeholder.
+    syncSupplierFromPo();
     filterPoOptions();
+    syncInvoiceNumberWithPo();
+    fillItemsFromPo();
 });
 </script>
 @endpush
