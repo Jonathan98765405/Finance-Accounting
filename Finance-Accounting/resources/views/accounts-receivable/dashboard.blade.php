@@ -1199,7 +1199,7 @@ function openAllPaymentsModal() {
         return `
             <tr class="border-b border-slate-100 text-sm hover:bg-slate-50/50">
                 <td class="px-4 py-3 font-semibold text-slate-800">${customer ? customer.customer_name : 'N/A'}</td>
-                <td class="px-4 py-3 font-medium text-navy">${p.invoice_number ?? 'N/A'}</td>
+                <td class="px-4 py-3 font-medium text-navy whitespace-nowrap">${p.reference_no ?? 'N/A'}</td>
                 <td class="px-4 py-3 text-right font-bold text-brand-green">${formatCurrency(p.amount)}</td>
                 <td class="px-4 py-3 text-center text-slate-500 font-medium">${formatDate(p.payment_date)}</td>
             </tr>`;
@@ -1213,7 +1213,7 @@ function openAllPaymentsModal() {
                 <thead class="bg-slate-50 text-slate-500 text-xs font-bold uppercase border-b border-slate-100 sticky top-0 z-10">
                     <tr>
                         <th class="px-4 py-3">Client Entity</th>
-                        <th class="px-4 py-3">Document Identification</th>
+                        <th class="px-4 py-3 whitespace-nowrap">Reference No.</th>
                         <th class="px-4 py-3 text-right">Settled Volume</th>
                         <th class="px-4 py-3 text-center">Posting Timeline</th>
                     </tr>
@@ -1224,9 +1224,8 @@ function openAllPaymentsModal() {
         <div class="flex justify-end mt-4">
             <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50">Close Registry View</button>
         </div>
-    `, 'lg');
+    `, 'xl');
 }
-
 document.addEventListener('DOMContentLoaded', function () {
     renderDashboard();
 });
