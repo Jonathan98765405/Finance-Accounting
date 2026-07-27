@@ -109,9 +109,8 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Supplier</label>
-                        <select class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
-                            <option>Select Supplier</option>
-                        </select>
+                        <input type="text" name="supplier" value="{{ old('supplier') }}" placeholder="Enter supplier name"
+                               class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Warranty</label>
@@ -130,9 +129,8 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Department</label>
-                        <select class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
-                            <option>Select department</option>
-                        </select>
+                        <input type="text" name="department" value="{{ old('department') }}" placeholder="Enter department"
+                               class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Location</label>
@@ -142,9 +140,8 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Assigned To</label>
-                        <select class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
-                            <option>Select employee</option>
-                        </select>
+                        <input type="text" name="assigned_to" value="{{ old('assigned_to') }}" placeholder="Enter employee name"
+                               class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Status</label>

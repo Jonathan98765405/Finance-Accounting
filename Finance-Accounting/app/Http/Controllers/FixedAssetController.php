@@ -142,6 +142,9 @@ class FixedAssetController extends Controller
             'warranty_years' => 'nullable|integer|min:0',
             'description' => 'nullable|string',
             'condition' => 'nullable|in:New,Good,Fair,Poor',
+            'supplier' => 'nullable|string|max:150',
+            'department' => 'nullable|string|max:100',
+            'assigned_to' => 'nullable|string|max:150',
         ]);
 
         $asset = \DB::transaction(function () use ($validated) {
@@ -172,8 +175,22 @@ class FixedAssetController extends Controller
                 'warranty_years' => $validated['warranty_years'] ?? null,
                 'description' => $validated['description'] ?? null,
                 'condition' => $validated['condition'] ?? 'Good',
+                'supplier' => $validated['supplier'] ?? null,
             ]);
         });
+
+        // ✅ Kapag may laman ang Department o Assigned To, gumawa agad ng Assignment record
+        if (!empty($validated['department']) || !empty($validated['assigned_to'])) {
+            Assignment::create([
+                'asset_id' => $asset->asset_id,
+                'assigned_to' => $validated['assigned_to'] ?? 'Unassigned',
+                'department' => $validated['department'] ?? null,
+                'location' => $validated['location'] ?? null,
+                'date_assigned' => now()->format('Y-m-d'),
+                'cost_center' => null,
+                'remarks' => 'Auto-created during asset registration.',
+            ]);
+        }
 
         $this->gl->postAssetAcquisition($asset);
 
