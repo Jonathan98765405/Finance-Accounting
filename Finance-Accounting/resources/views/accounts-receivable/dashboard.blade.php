@@ -491,14 +491,41 @@ document.addEventListener('click', (e) => {
 });
 
 // ================= ACTION MODALS =================
-function openReminderModal() {
+async function openReminderModal() {
     const customerOpts = customers.map(c =>
         `<option value="${c.id}">${c.customer_name}</option>`
     ).join('');
 
-    const invoiceOpts = invoicesData.map(i =>
-        `<option value="${i.id}">${i.invoice_number} - (${formatCurrency(i.balance)})</option>`
-    ).join('');
+    // Route URL from Blade so it respects the app's base path
+    const CUSTOMER_INVOICES_URL_BASE = "{{ url('/accounts-receivable/customer') }}";
+
+    // Fetch a customer's OWN pending invoices from the server
+    // (not the limited 7-latest-system-wide invoicesData array)
+    async function fetchCustomerInvoices(customerId) {
+        try {
+            const res = await fetch(`${CUSTOMER_INVOICES_URL_BASE}/${customerId}/invoices`, {
+                headers: { 'Accept': 'application/json' }
+            });
+            if (!res.ok) throw new Error('Request failed');
+            return await res.json();
+        } catch (err) {
+            console.error(err);
+            return [];
+        }
+    }
+
+    function renderInvoiceOpts(invoiceList) {
+        if (!invoiceList || invoiceList.length === 0) {
+            return `<option value="">No pending invoices for this customer</option>`;
+        }
+        return invoiceList.map(i =>
+            `<option value="${i.id}">${i.invoice_number} - (${formatCurrency(i.balance)})</option>`
+        ).join('');
+    }
+
+    const initialCustomerId = customers.length > 0 ? customers[0].id : null;
+    const initialInvoices = initialCustomerId ? await fetchCustomerInvoices(initialCustomerId) : [];
+    const invoiceOpts = renderInvoiceOpts(initialInvoices);
 
     AppUI.openModal(`
         <h3 class="text-xl font-bold text-navy mb-1">Send Automated Reminder</h3>
@@ -579,12 +606,23 @@ Thank you.</textarea>
         </form>
     `, 'md');
 
+    const customerSelectEl = document.getElementById('reminderCustomerSelect');
+    const invoiceSelectEl = document.getElementById('reminderInvoiceSelect');
+
+    // 👇 Auto-fill: every time the customer changes, fetch THAT customer's
+    // actual pending invoices from the server and repopulate the dropdown
+    customerSelectEl.addEventListener('change', async function () {
+        invoiceSelectEl.innerHTML = `<option value="">Loading invoices...</option>`;
+        const invoices = await fetchCustomerInvoices(this.value);
+        invoiceSelectEl.innerHTML = renderInvoiceOpts(invoices);
+    });
+
     document.getElementById('reminderSubmitForm').addEventListener('submit', function (e) {
 
         e.preventDefault();
 
-        const customerId = document.getElementById('reminderCustomerSelect').value;
-        const invoiceId = document.getElementById('reminderInvoiceSelect').value;
+        const customerId = customerSelectEl.value;
+        const invoiceId = invoiceSelectEl.value;
         const message = document.getElementById('reminderMessageText').value;
 
         fetch('/accounts-receivable/reminder', {
