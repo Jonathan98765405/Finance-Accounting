@@ -3,27 +3,22 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\CustomerResource;
 use App\Models\Customer;
 
 class CustomerApiController extends Controller
 {
-    /**
-     * GET /api/v1/customers
-     */
     public function index()
     {
-        return response()->json(
-            Customer::orderBy('name')->get()
-        );
+        $customers = Customer::orderBy('name')->get();
+
+        return CustomerResource::collection($customers);
     }
 
-    /**
-     * GET /api/v1/customers/{customer}
-     */
     public function show(Customer $customer)
     {
-        return response()->json(
-            $customer->load('salesInvoices')
-        );
+        $customer->load('salesInvoices');
+
+        return new CustomerResource($customer);
     }
 }
