@@ -9,13 +9,11 @@
 
     @php
       $fmt = fn($n) => ($n < 0 ? '-₱' : '₱') . number_format(abs($n));
-
-      $statusColor = fn($status) => match ($status) {
-        'Filed' => 'text-brand-green',
-        'Calculated' => 'text-navy-600',
-        'Pending' => 'text-brand-orange',
-        default => 'text-slate-400',
-      };
+      $taxCalcMonthNames = [
+        1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April',
+        5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August',
+        9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December',
+      ];
     @endphp
 
     {{-- ================= CASH FLOW ================= --}}
@@ -77,21 +75,46 @@
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
       <div class="bg-white rounded-2xl shadow-card p-5">
         <p class="text-sm font-bold text-brand-orange">Total Tax Due</p>
-        <p class="text-2xl font-extrabold text-navy mt-1">{{ $fmt($taxSummary['totalDue']) }}</p>
+        <p id="tax-summary-total-due" class="text-2xl font-extrabold text-navy mt-1">{{ $fmt($taxSummary['totalDue']) }}</p>
       </div>
       <div class="bg-white rounded-2xl shadow-card p-5">
         <p class="text-sm font-bold text-brand-green">Filed YTD</p>
-        <p class="text-2xl font-extrabold text-navy mt-1">{{ $fmt($taxSummary['filedYtd']) }}</p>
+        <p id="tax-summary-filed-ytd" class="text-2xl font-extrabold text-navy mt-1">{{ $fmt($taxSummary['filedYtd']) }}</p>
       </div>
       <div class="bg-white rounded-2xl shadow-card p-5">
         <p class="text-sm font-bold text-slate-500">Pending Filings</p>
-        <p class="text-2xl font-extrabold text-navy mt-1">{{ $taxSummary['pendingFilings'] }}</p>
+        <p id="tax-summary-pending" class="text-2xl font-extrabold text-navy mt-1">{{ $taxSummary['pendingFilings'] }}</p>
       </div>
     </div>
 
     {{-- ================= TAX TABLE ================= --}}
     <div class="bg-white rounded-2xl shadow-card p-6 mb-6">
-      <p class="text-sm font-bold text-navy mb-4">Tax Calculation</p>
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-bold text-navy">Tax Calculation</p>
+        <div class="flex items-center gap-2">
+          <div class="relative">
+            <select id="tax-calc-month-select"
+              class="appearance-none flex items-center gap-1 text-sm font-medium text-slate-600 border border-slate-200 rounded-lg pl-3 pr-8 py-1.5 bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-navy-600/30">
+              <option value="all" @selected(($taxCalcMonth ?? null) === null)>Full Year</option>
+              @foreach ($taxCalcMonthNames as $m => $name)
+                <option value="{{ $m }}" @selected(($taxCalcMonth ?? null) == $m)>{{ $name }}</option>
+              @endforeach
+            </select>
+            <i data-lucide="chevron-down"
+              class="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+          </div>
+          <div class="relative">
+            <select id="tax-calc-year-select"
+              class="appearance-none flex items-center gap-1 text-sm font-medium text-slate-600 border border-slate-200 rounded-lg pl-3 pr-8 py-1.5 bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-navy-600/30">
+              @foreach ($years as $y)
+                <option value="{{ $y }}" @selected($y == ($taxCalcYear ?? $selectedYear))>{{ $y }}</option>
+              @endforeach
+            </select>
+            <i data-lucide="chevron-down"
+              class="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+          </div>
+        </div>
+      </div>
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
@@ -100,28 +123,11 @@
               <th class="pb-2">Rate</th>
               <th class="pb-2">Taxable</th>
               <th class="pb-2">Amount</th>
-              <th class="pb-2">Deadline</th>
               <th class="pb-2">Status</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
-            @foreach ($taxCalculation as $tax)
-              <tr>
-                <td class="py-2">{{ $tax['type'] }}</td>
-                <td class="py-2">{{ $tax['rate'] }}</td>
-                <td class="py-2">{{ $fmt($tax['taxableAmount']) }}</td>
-                <td class="py-2 font-semibold">{{ $fmt($tax['amountDue']) }}</td>
-                <td class="py-2">{{ $tax['deadline'] }}</td>
-                <td class="py-2">
-                  <button type="button" class="js-tax-status font-semibold {{ $statusColor($tax['status']) }} hover:underline"
-                    data-type="{{ $tax['type'] }}" data-rate="{{ $tax['rate'] }}" data-taxable="{{ $tax['taxableAmount'] }}"
-                    data-amount="{{ $tax['amountDue'] }}" data-deadline="{{ $tax['deadline'] }}"
-                    data-status="{{ $tax['status'] }}">
-                    {{ $tax['status'] }}
-                  </button>
-                </td>
-              </tr>
-            @endforeach
+          <tbody id="tax-calculation-body" class="divide-y divide-slate-100">
+            {{-- Rendered by JS from TAX_CALCULATION_BY_PERIOD --}}
           </tbody>
         </table>
       </div>
@@ -169,8 +175,16 @@
 
       const CF_CURRENT_YEAR = {{ $selectedYear }};
       const CASHFLOW_BY_YEAR = { [CF_CURRENT_YEAR]: @json($cashflowMonthly) };
-      const TAX_SUMMARY_BY_YEAR = { [CF_CURRENT_YEAR]: @json($taxSummary) };
-      const TAX_CALCULATION_BY_YEAR = { [CF_CURRENT_YEAR]: @json($taxCalculation) };
+
+      const TAX_CALC_CURRENT_YEAR = {{ $taxCalcYear ?? $selectedYear }};
+      const TAX_CALC_CURRENT_MONTH = @json($taxCalcMonth ?? null);
+      const taxCalcPeriodKey = (year, month) => `${year}-${month ?? 'all'}`;
+      const TAX_CALCULATION_BY_PERIOD = {
+        [taxCalcPeriodKey(TAX_CALC_CURRENT_YEAR, TAX_CALC_CURRENT_MONTH)]: @json($taxCalculation),
+      };
+      const TAX_SUMMARY_BY_PERIOD = {
+        [taxCalcPeriodKey(TAX_CALC_CURRENT_YEAR, TAX_CALC_CURRENT_MONTH)]: @json($taxSummary),
+      };
 
       async function loadCashflowYear(year) {
         if (CASHFLOW_BY_YEAR[year]) return;
@@ -181,8 +195,20 @@
         if (!res.ok) return;
         const data = await res.json();
         CASHFLOW_BY_YEAR[year] = data.cashflowMonthly;
-        TAX_SUMMARY_BY_YEAR[year] = data.taxSummary;
-        TAX_CALCULATION_BY_YEAR[year] = data.taxCalculation;
+      }
+
+      async function loadTaxCalculation(year, month) {
+        const key = taxCalcPeriodKey(year, month);
+        if (TAX_CALCULATION_BY_PERIOD[key] && TAX_SUMMARY_BY_PERIOD[key]) return;
+
+        const monthParam = month ?? 'all';
+        const res = await fetch(`{{ url('/financial-reports/cashflow-tax/data') }}?year=${year}&tax_year=${year}&tax_month=${monthParam}`, {
+          headers: { 'Accept': 'application/json' }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        TAX_CALCULATION_BY_PERIOD[key] = data.taxCalculation;
+        TAX_SUMMARY_BY_PERIOD[key] = data.taxSummary;
       }
 
       function renderCashflowSummary(year) {
@@ -254,8 +280,45 @@
         openCashflowDetailModal(btn.dataset.year, parseInt(btn.dataset.index, 10));
       });
 
+      function renderTaxSummary(year, month) {
+        const summary = TAX_SUMMARY_BY_PERIOD[taxCalcPeriodKey(year, month)] || { totalDue: 0, filedYtd: 0, pendingFilings: 0 };
+        document.getElementById('tax-summary-total-due').textContent = cfFmt(summary.totalDue);
+        document.getElementById('tax-summary-filed-ytd').textContent = cfFmt(summary.filedYtd);
+        document.getElementById('tax-summary-pending').textContent = summary.pendingFilings;
+      }
+
+      function renderTaxCalculationTable(year, month) {
+        const rows = TAX_CALCULATION_BY_PERIOD[taxCalcPeriodKey(year, month)] || [];
+        document.getElementById('tax-calculation-body').innerHTML = rows.map(tax => `
+            <tr>
+              <td class="py-2">${tax.type}</td>
+              <td class="py-2">${tax.rate}</td>
+              <td class="py-2">${cfFmt(tax.taxableAmount)}</td>
+              <td class="py-2 font-semibold">${cfFmt(tax.amountDue)}</td>
+              <td class="py-2">
+                <button type="button" class="js-tax-status font-semibold ${taxStatusColor(tax.status)} hover:underline"
+                  data-type="${tax.type}" data-rate="${tax.rate}" data-taxable="${tax.taxableAmount}"
+                  data-amount="${tax.amountDue}" data-status="${tax.status}">
+                  ${tax.status}
+                </button>
+              </td>
+            </tr>
+          `).join('');
+      }
+
+      function taxStatusColor(status) {
+        switch (status) {
+          case 'Filed': return 'text-brand-green';
+          case 'Calculated': return 'text-navy-600';
+          case 'Pending': return 'text-brand-orange';
+          default: return 'text-slate-400';
+        }
+      }
+
       renderCashflowSummary(CF_CURRENT_YEAR);
       renderCashflowTable(CF_CURRENT_YEAR);
+      renderTaxSummary(TAX_CALC_CURRENT_YEAR, TAX_CALC_CURRENT_MONTH);
+      renderTaxCalculationTable(TAX_CALC_CURRENT_YEAR, TAX_CALC_CURRENT_MONTH);
 
       document.getElementById('cashflow-year-select').addEventListener('change', async function () {
         const year = this.value;
@@ -263,6 +326,18 @@
         renderCashflowSummary(year);
         renderCashflowTable(year);
       });
+
+      async function refreshTaxCalculation() {
+        const year = document.getElementById('tax-calc-year-select').value;
+        const monthRaw = document.getElementById('tax-calc-month-select').value;
+        const month = monthRaw === 'all' ? null : parseInt(monthRaw, 10);
+        await loadTaxCalculation(year, month);
+        renderTaxCalculationTable(year, month);
+        renderTaxSummary(year, month);
+      }
+
+      document.getElementById('tax-calc-year-select').addEventListener('change', refreshTaxCalculation);
+      document.getElementById('tax-calc-month-select').addEventListener('change', refreshTaxCalculation);
 
       const TAX_STATUS_INFO = {
         Filed: {
@@ -290,7 +365,6 @@
         const rate = btn.dataset.rate;
         const taxable = parseFloat(btn.dataset.taxable);
         const amount = parseFloat(btn.dataset.amount);
-        const deadline = btn.dataset.deadline;
         const status = btn.dataset.status;
         const info = TAX_STATUS_INFO[status] || TAX_STATUS_INFO.Pending;
 
@@ -314,13 +388,9 @@
                 <span class="text-sm text-slate-500">Taxable Amount</span>
                 <span class="text-sm font-semibold text-navy">${cfFmt(taxable)}</span>
               </div>
-              <div class="flex items-center justify-between py-2 border-b border-slate-100">
+              <div class="flex items-center justify-between py-2">
                 <span class="text-sm text-slate-500">Amount Due</span>
                 <span class="text-sm font-semibold text-navy">${cfFmt(amount)}</span>
-              </div>
-              <div class="flex items-center justify-between py-2">
-                <span class="text-sm text-slate-500">Deadline</span>
-                <span class="text-sm font-semibold text-navy">${deadline}</span>
               </div>
             </div>
             <div class="flex justify-end pt-4">

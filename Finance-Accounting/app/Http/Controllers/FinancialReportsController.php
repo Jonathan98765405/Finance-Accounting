@@ -95,11 +95,13 @@ class FinancialReportsController extends Controller
     public function cashflowTaxData(Request $request)
     {
         $year = (int) $request->query('year', now()->year);
+        $taxYear = (int) $request->query('tax_year', $year);
+        $taxMonth = $this->parseTaxMonth($request->query('tax_month'));
 
         return response()->json([
             'cashflowMonthly' => $this->reports->cashFlowStatement($year),
-            'taxSummary' => $this->reports->taxSummary($year),
-            'taxCalculation' => $this->reports->taxCalculation($year),
+            'taxSummary' => $this->reports->taxSummary($taxYear, $taxMonth),
+            'taxCalculation' => $this->reports->taxCalculation($taxYear, $taxMonth),
         ]);
     }
 
@@ -110,16 +112,54 @@ class FinancialReportsController extends Controller
     {
         $years = $this->reports->availableYears();
         $year = (int) $request->query('year', $years[0] ?? now()->year);
+        $taxYear = (int) $request->query('tax_year', $year);
+        $taxMonth = $this->parseTaxMonth($request->query('tax_month', now()->month));
 
         return view('financial-reports.cashflow-tax', [
             'years' => $years,
             'selectedYear' => $year,
             'headerStats' => $this->reports->headerStats($year),
             'cashflowMonthly' => $this->reports->cashFlowStatement($year),
-            'taxSummary' => $this->reports->taxSummary($year),
-            'taxCalculation' => $this->reports->taxCalculation($year),
+            'taxSummary' => $this->reports->taxSummary($taxYear, $taxMonth),
+            'taxCalculation' => $this->reports->taxCalculation($taxYear, $taxMonth),
+            'taxCalcYear' => $taxYear,
+            'taxCalcMonth' => $taxMonth,
             'taxCalendar' => $this->reports->taxCalendar(),
         ]);
+    }
+
+    /**
+     * Normalize the Tax Calculation month selector: null/empty/'all' means
+     * "full year total", otherwise it's clamped to a valid month number.
+     */
+    protected function parseTaxMonth(mixed $value): ?int
+    {
+        if ($value === null || $value === '' || $value === 'all') {
+            return null;
+        }
+
+        $month = (int) $value;
+
+        return ($month >= 1 && $month <= 12) ? $month : null;
+    }
+
+    /**
+     * Build a "Recent Compliance Activities" entry in the same shape the
+     * Overview page's JS expects, so every audit/tax action can hand one
+     * back and the front-end can prepend it to the feed live instead of
+     * only ever showing whatever was there on the last page load.
+     */
+    protected function buildActivity(string $icon, string $iconColor, string $title, string $type, ?string $notes, string $color = 'text-slate-400'): array
+    {
+        return [
+            'title'     => $title,
+            'type'      => $type,
+            'notes'     => $notes ?? '',
+            'color'     => $color,
+            'when'      => 'Just now',
+        ];
+
+        
     }
 
     /**
@@ -135,7 +175,9 @@ class FinancialReportsController extends Controller
             'name'        => ['required', 'string', 'max:255'],
             'type'        => ['required', 'in:Internal,External,Regulatory,Financial'],
             'priority'    => ['nullable', 'in:low,medium,high,critical'],
-            'date'        => ['required', 'date'],
+            'date'        => ['nullable', 'date', 'required_without_all:year,month'],
+            'year'        => ['nullable', 'integer', 'digits:4', 'required_without:date'],
+            'month'       => ['nullable', 'integer', 'min:1', 'max:12', 'required_without:date'],
             'recurrence'  => ['nullable', 'in:none,monthly,quarterly,annually'],
             'assigned_to' => ['nullable', 'string', 'max:255'],
             'checklist'   => ['nullable', 'array'],
@@ -144,7 +186,12 @@ class FinancialReportsController extends Controller
             'notes'       => ['nullable', 'string'],
         ]);
 
-        $scheduledDate = Carbon::parse($validated['date']);
+        // Quick-add flow (e.g. "Add Audit" from a Monthly Report row that has
+        // no audit yet) sends only year + month; fall back to the 1st of that
+        // month so we always end up with a concrete scheduled_date.
+        $scheduledDate = isset($validated['date'])
+            ? Carbon::parse($validated['date'])
+            : Carbon::create((int) $validated['year'], (int) $validated['month'], 1);
 
         $audit = FinAudit::create([
             'name'           => $validated['name'],
@@ -173,6 +220,14 @@ class FinancialReportsController extends Controller
                 'dateCompleted' => $audit->date_completed,
                 'findings' => $audit->findings,
             ],
+            'activity' => $this->buildActivity(
+                'file-plus',
+                'text-navy-600',
+                "{$audit->audit_type} audit scheduled for " . (self::MONTH_NAMES[$audit->audit_month] ?? '') . " {$audit->audit_year}",
+                'Audit',
+                "Assigned to {$audit->auditor}.",
+                'text-brand-orange'
+            ),
         ], 201);
     }
 
@@ -203,6 +258,12 @@ class FinancialReportsController extends Controller
 
         $displayDate = $audit->scheduled_date ?? $audit->date_completed;
 
+        $statusColor = match ($audit->status) {
+            'Complaint' => 'text-brand-green',
+            'Failed' => 'text-brand-red',
+            default => 'text-brand-orange',
+        };
+
         return response()->json([
             'audit' => [
                 'id' => $audit->id,
@@ -215,6 +276,14 @@ class FinancialReportsController extends Controller
                 'dateCompleted' => $audit->date_completed,
                 'findings' => $audit->findings,
             ],
+            'activity' => $this->buildActivity(
+                'check-circle',
+                $statusColor,
+                "{$audit->audit_type} audit for " . (self::MONTH_NAMES[$audit->audit_month] ?? '') . " {$audit->audit_year} marked as {$audit->status}",
+                'Audit',
+                $audit->findings,
+                $statusColor
+            ),
         ]);
     }
 
@@ -229,9 +298,23 @@ class FinancialReportsController extends Controller
 
         $id = $audit->id;
         $year = $audit->audit_year;
+        $month = self::MONTH_NAMES[$audit->audit_month] ?? null;
+        $auditType = $audit->audit_type;
         $audit->delete();
 
-        return response()->json(['deleted' => true, 'id' => $id, 'year' => $year]);
+        return response()->json([
+            'deleted' => true,
+            'id' => $id,
+            'year' => $year,
+            'activity' => $this->buildActivity(
+                'trash-2',
+                'text-brand-red',
+                "{$auditType} audit for {$month} {$year} removed",
+                'Audit',
+                null,
+                'text-slate-400'
+            ),
+        ]);
     }
 
     /**
@@ -251,13 +334,25 @@ class FinancialReportsController extends Controller
         ]);
 
         $item = FinTaxCalendar::create([
-            'label'    => $validated['label'],
-            'due_date' => $validated['date'],
-            'amount'   => $validated['amount'],
-            'status'   => $validated['status'],
+            'label'     => $validated['label'],
+            'due_date'  => $validated['date'],
+            'tax_year'  => Carbon::parse($validated['date'])->year,
+            'tax_month' => Carbon::parse($validated['date'])->month,
+            'amount'    => $validated['amount'],
+            'status'    => $validated['status'],
         ]);
 
-        return response()->json(['item' => $this->formatTaxCalendarItem($item)], 201);
+        return response()->json([
+            'item' => $this->formatTaxCalendarItem($item),
+            'activity' => $this->buildActivity(
+                'calendar-plus',
+                'text-navy-600',
+                "Tax filing \"{$item->label}\" added to calendar",
+                'Tax Filing',
+                'Due ' . Carbon::parse($item->due_date)->format('M j, Y') . '.',
+                'text-brand-orange'
+            ),
+        ], 201);
     }
 
     /**
@@ -277,13 +372,31 @@ class FinancialReportsController extends Controller
         ]);
 
         $taxCalendar->update([
-            'label'    => $validated['label'],
-            'due_date' => $validated['date'],
-            'amount'   => $validated['amount'],
-            'status'   => $validated['status'],
+            'label'     => $validated['label'],
+            'due_date'  => $validated['date'],
+            'tax_year'  => Carbon::parse($validated['date'])->year,
+            'tax_month' => Carbon::parse($validated['date'])->month,
+            'amount'    => $validated['amount'],
+            'status'    => $validated['status'],
         ]);
 
-        return response()->json(['item' => $this->formatTaxCalendarItem($taxCalendar)]);
+        $statusColor = match ($taxCalendar->status) {
+            'Filed' => 'text-brand-green',
+            'Overdue' => 'text-brand-red',
+            default => 'text-brand-orange',
+        };
+
+        return response()->json([
+            'item' => $this->formatTaxCalendarItem($taxCalendar),
+            'activity' => $this->buildActivity(
+                'file-check',
+                $statusColor,
+                "Tax filing \"{$taxCalendar->label}\" marked as {$taxCalendar->status}",
+                'Tax Filing',
+                null,
+                $statusColor
+            ),
+        ]);
     }
 
     /**
@@ -296,9 +409,21 @@ class FinancialReportsController extends Controller
         }
 
         $id = $taxCalendar->id;
+        $label = $taxCalendar->label;
         $taxCalendar->delete();
 
-        return response()->json(['deleted' => true, 'id' => $id]);
+        return response()->json([
+            'deleted' => true,
+            'id' => $id,
+            'activity' => $this->buildActivity(
+                'trash-2',
+                'text-brand-red',
+                "Tax filing \"{$label}\" removed from calendar",
+                'Tax Filing',
+                null,
+                'text-slate-400'
+            ),
+        ]);
     }
 
     /**

@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use App\Models\AccountPayable\Invoice as ApInvoice;
 use App\Models\AccountReceivable\Invoice as ArInvoice;
-use App\Models\FinTaxCalendar;
 
 /**
  * Builds every number shown on the Financial Reports pages
@@ -368,9 +367,6 @@ class FinancialReportService
                 'name' => $a->name,
                 'year' => $a->audit_year,
                 'month' => self::MONTH_NAMES[$a->audit_month] ?? null,
-                // Exact date shown in Audit History: prefer the scheduled
-                // date (set when the audit is created), fall back to
-                // date_completed for older rows that predate that column.
                 'date' => $a->scheduled_date
                     ? Carbon::parse($a->scheduled_date)->format('M j, Y')
                     : ($a->date_completed ? Carbon::parse($a->date_completed)->format('M j, Y') : null),
@@ -402,10 +398,6 @@ class FinancialReportService
             ->all();
     }
 
-    /**
-     * Monthly reports table on Overview: revenue/expense/profit/margin per
-     * month plus that month's audit result, all sourced live.
-     */
     public function monthlyReports(int $year): array
     {
         $revenue = $this->monthlySeries($year, 'Revenue');
@@ -448,47 +440,37 @@ class FinancialReportService
     /**
      * VAT rows for the Cash Flow & Tax "Tax Calculation" table, derived
      * directly from posted AR invoices (output VAT on sales) and AP
-     * invoices (input VAT on purchases) for the year — no more reading
-     * from the disconnected fin_tax_filings table.
+     * invoices (input VAT on purchases).
+     *
+     * $month is optional: pass null for the full-year total, or 1-12 to scope 
+     * every figure — taxable amounts and VAT due — to that single month only.
      */
-    public function taxCalculation(int $year): array
+    public function taxCalculation(int $year, ?int $month = null): array
     {
-        $salesSubtotal = (float) ArInvoice::whereYear('invoice_date', $year)->sum('subtotal');
-        $outputVat = (float) ArInvoice::whereYear('invoice_date', $year)->sum('tax');
+        $arBase = fn () => ArInvoice::whereYear('invoice_date', $year)
+            ->when($month, fn ($q) => $q->whereMonth('invoice_date', $month));
+        $apBase = fn () => ApInvoice::whereYear('invoice_date', $year)
+            ->when($month, fn ($q) => $q->whereMonth('invoice_date', $month));
 
-        $purchasesSubtotal = (float) ApInvoice::whereYear('invoice_date', $year)->sum('subtotal');
-        $inputVat = (float) ApInvoice::whereYear('invoice_date', $year)->sum('tax');
+        $salesSubtotal = (float) $arBase()->sum('subtotal');
+        $outputVat = (float) $arBase()->sum('tax');
+
+        $purchasesSubtotal = (float) $apBase()->sum('subtotal');
+        $inputVat = (float) $apBase()->sum('tax');
 
         $netVat = $outputVat - $inputVat;
 
-        // Deadline = 1 month after the tax was actually incurred, i.e.
-        // 1 month after the latest AR invoice date (for output VAT) /
-        // latest AP invoice date (for input VAT), not a fixed calendar date.
-        $lastArInvoiceDate = ArInvoice::whereYear('invoice_date', $year)->max('invoice_date');
-        $lastApInvoiceDate = ApInvoice::whereYear('invoice_date', $year)->max('invoice_date');
+        // Deadline = 1 month after the tax was actually incurred
+        $lastArInvoiceDate = $arBase()->max('invoice_date');
+        $lastApInvoiceDate = $apBase()->max('invoice_date');
 
         $arDeadline = $lastArInvoiceDate ? Carbon::parse($lastArInvoiceDate)->addMonth() : null;
         $apDeadline = $lastApInvoiceDate ? Carbon::parse($lastApInvoiceDate)->addMonth() : null;
-
-        // Net VAT deadline follows whichever side (sales or purchases)
-        // most recently incurred tax, since that's what triggers the filing.
         $netDeadline = collect([$arDeadline, $apDeadline])->filter()->sort()->last();
 
-        // Sync each computed obligation into fin_tax_calendar — the same
-        // table backing the editable Tax Calendar grid below — so marking
-        // one "Filed" there is reflected here, and vice versa, instead of
-        // the calculation table silently guessing its own status.
-        $arEntry = $this->syncTaxCalendarEntry("Output VAT (Sales) {$year}", $arDeadline, $outputVat);
-        $apEntry = $this->syncTaxCalendarEntry("Input VAT (Purchases) {$year}", $apDeadline, $inputVat);
-        $netEntry = $this->syncTaxCalendarEntry("Net VAT Payable {$year}", $netDeadline, max($netVat, 0));
-
-        $arDeadlineLabel = $arDeadline ? $arDeadline->format('M j, Y') : 'N/A';
-        $apDeadlineLabel = $apDeadline ? $apDeadline->format('M j, Y') : 'N/A';
-        $netDeadlineLabel = $netDeadline ? $netDeadline->format('M j, Y') : 'N/A';
-
-        $arStatus = $arEntry ? $this->calendarStatusToTaxStatus($arEntry->status) : 'Pending';
-        $apStatus = $apEntry ? $this->calendarStatusToTaxStatus($apEntry->status) : 'Pending';
-        $netStatus = $netEntry ? $this->calendarStatusToTaxStatus($netEntry->status) : 'Pending';
+        $arStatus = ($arDeadline && $arDeadline->isPast()) ? 'Pending' : 'Calculated';
+        $apStatus = ($apDeadline && $apDeadline->isPast()) ? 'Pending' : 'Calculated';
+        $netStatus = ($netDeadline && $netDeadline->isPast()) ? 'Pending' : 'Calculated';
 
         return [
             [
@@ -496,7 +478,6 @@ class FinancialReportService
                 'rate' => '12%',
                 'taxableAmount' => round($salesSubtotal, 2),
                 'amountDue' => round($outputVat, 2),
-                'deadline' => $arDeadlineLabel,
                 'status' => $arStatus,
             ],
             [
@@ -504,7 +485,6 @@ class FinancialReportService
                 'rate' => '12%',
                 'taxableAmount' => round($purchasesSubtotal, 2),
                 'amountDue' => round($inputVat, 2),
-                'deadline' => $apDeadlineLabel,
                 'status' => $apStatus,
             ],
             [
@@ -512,78 +492,45 @@ class FinancialReportService
                 'rate' => '12%',
                 'taxableAmount' => round($salesSubtotal - $purchasesSubtotal, 2),
                 'amountDue' => round(max($netVat, 0), 2),
-                'deadline' => $netDeadlineLabel,
                 'status' => $netVat <= 0 ? 'No Payment Due' : $netStatus,
             ],
         ];
     }
 
     /**
-     * Upsert one computed VAT obligation (Output/Input/Net) into
-     * fin_tax_calendar, keyed by its label, so the Tax Calculation table
-     * and the editable Tax Calendar grid always describe the same
-     * filing. Amount/due_date are refreshed from AR/AP every call;
-     * status is only initialized on first creation (or auto-flipped to
-     * Overdue once the deadline passes) and otherwise left alone so a
-     * user's manual "Filed" mark isn't overwritten.
+     * Tax summary cards on the Cash Flow & Tax page. These now sync to the
+     * Tax Calculation section's own year/month selection.
+     *
+     * "Total Due" is the net VAT payable (output VAT from AR minus input
+     * VAT from AP) for that period. "Filed YTD" / "Pending Filings" read
+     * fin_tax_calendar for manually-added filings.
+     *
+     * $month null = full-year totals (rows tagged with this tax_year,
+     * regardless of tax_month); $month 1-12 = just that month's filings.
      */
-    protected function syncTaxCalendarEntry(string $label, ?Carbon $deadline, float $amount): ?FinTaxCalendar
+    public function taxSummary(int $year, ?int $month = null): array
     {
-        if (! $deadline) {
-            return null;
-        }
+        $arBase = fn () => ArInvoice::whereYear('invoice_date', $year)
+            ->when($month, fn ($q) => $q->whereMonth('invoice_date', $month));
+        $apBase = fn () => ApInvoice::whereYear('invoice_date', $year)
+            ->when($month, fn ($q) => $q->whereMonth('invoice_date', $month));
 
-        $entry = FinTaxCalendar::firstOrNew(['label' => $label]);
-        $entry->due_date = $deadline->format('Y-m-d');
-        $entry->amount = round($amount, 2);
-
-        if (! $entry->exists) {
-            $entry->status = $deadline->isPast() ? 'Overdue' : 'Upcoming';
-        } elseif ($entry->status === 'Upcoming' && $deadline->isPast()) {
-            $entry->status = 'Overdue';
-        }
-
-        $entry->save();
-
-        return $entry;
-    }
-
-    /**
-     * Maps fin_tax_calendar's status vocabulary (Upcoming/Filed/Overdue)
-     * to the Tax Calculation table's vocabulary (Calculated/Pending/Filed)
-     * so $statusColor() in the blade colors it correctly.
-     */
-    protected function calendarStatusToTaxStatus(string $calendarStatus): string
-    {
-        return match ($calendarStatus) {
-            'Filed' => 'Filed',
-            'Overdue' => 'Pending',
-            default => 'Calculated', // Upcoming
-        };
-    }
-
-    /**
-     * Tax summary cards on the Cash Flow & Tax page. "Total Due" is now
-     * the real net VAT payable (output VAT from AR minus input VAT from
-     * AP). "Filed YTD" / "Pending Filings" read fin_tax_calendar, which
-     * now includes the synced Output/Input/Net VAT entries alongside
-     * any manually-added filings, so both stay in agreement.
-     */
-    public function taxSummary(int $year): array
-    {
-        $outputVat = (float) ArInvoice::whereYear('invoice_date', $year)->sum('tax');
-        $inputVat = (float) ApInvoice::whereYear('invoice_date', $year)->sum('tax');
+        $outputVat = (float) $arBase()->sum('tax');
+        $inputVat = (float) $apBase()->sum('tax');
         $netVatPayable = max($outputVat - $inputVat, 0);
 
-        $filedYtd = DB::table('fin_tax_calendar')
-            ->whereYear('due_date', $year)
-            ->where('status', 'Filed')
-            ->sum('amount');
+        $calendarQuery = fn () => DB::table('fin_tax_calendar')
+            ->whereRaw('COALESCE(tax_year, YEAR(due_date)) = ?', [$year])
+            ->when($month, fn ($q) => $q->where(function ($q2) use ($month) {
+                // Year-to-date through the selected month: include filings
+                // tagged to this month or any earlier month, plus any
+                // annual (non-monthly) filing, which covers the whole year
+                // regardless of which month is currently selected.
+                $q2->whereNull('tax_month')->orWhere('tax_month', '<=', $month);
+            }));
 
-        $pendingFilings = DB::table('fin_tax_calendar')
-            ->whereYear('due_date', $year)
-            ->where('status', '!=', 'Filed')
-            ->count();
+        $filedYtd = $calendarQuery()->where('status', 'Filed')->sum('amount');
+        $pendingFilings = $calendarQuery()->where('status', '!=', 'Filed')->count();
 
         return [
             'totalDue' => round($netVatPayable, 2),
@@ -637,9 +584,9 @@ class FinancialReportService
             ->where('status', 'Pending')
             ->count();
 
-        $pendingTax = DB::table('fin_tax_filings')
-            ->where('tax_year', $year)
-            ->whereIn('status', ['Pending', 'Calculated'])
+        $pendingTax = DB::table('fin_tax_calendar')
+            ->whereRaw('COALESCE(tax_year, YEAR(due_date)) = ?', [$year])
+            ->where('status', '!=', 'Filed')
             ->count();
 
         return [
@@ -717,4 +664,6 @@ class FinancialReportService
             ->where('gl_entries.status', 'Posted')
             ->whereYear('gl_entries.entry_date', $year);
     }
+
+    
 }

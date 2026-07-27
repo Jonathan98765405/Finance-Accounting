@@ -32,8 +32,7 @@ class Role extends Model
     ];
 
     /**
-     * NEW: Roles allowed to manage Accounts Receivable.
-     * Everyone else is restricted to view-only mode.
+     * Roles allowed to manage Accounts Receivable.
      */
     public const CAN_MANAGE_AR = [
         'administrator',
@@ -42,16 +41,21 @@ class Role extends Model
     ];
 
     /**
-<<<<<<< HEAD:app/Models/Role.php
      * Roles allowed to manage Accounts Payable.
-     * Everyone else is restricted to view-only mode.
-=======
-     * NEW: Roles allowed to manage Accounts Payable.
->>>>>>> df559247cea13dad1c9e7ba8fb183e7aab709ff6:Finance-Accounting/app/Models/Role.php
      */
     public const CAN_MANAGE_AP = [
         'administrator',
         'ap_staff',
+        'finance_manager',
+    ];
+
+    /**
+     * Roles allowed to manage Fixed Assets & Invoice Actions.
+     * Allowed roles: administrator, fa_staff, finance_manager
+     */
+    public const CAN_MANAGE_FA = [
+        'administrator',
+        'fa_staff',
         'finance_manager',
     ];
 
@@ -79,23 +83,21 @@ class Role extends Model
         return self::activeRoleCan(self::CAN_MANAGE_LEDGER);
     }
 
-    /**
-     * NEW: Method helper to verify Accounts Receivable write access.
-     */
     public static function activeRoleCanManageAR(): bool
     {
         return self::activeRoleCan(self::CAN_MANAGE_AR);
     }
 
-    /**
-<<<<<<< HEAD:app/Models/Role.php
-     * Method helper to verify Accounts Payable write access.
-=======
-     * NEW: Method helper to verify Accounts Payable write access.
->>>>>>> df559247cea13dad1c9e7ba8fb183e7aab709ff6:Finance-Accounting/app/Models/Role.php
-     */
     public static function activeRoleCanManageAP(): bool
     {
         return self::activeRoleCan(self::CAN_MANAGE_AP);
+    }
+
+    /**
+     * Method helper to verify Fixed Asset and Invoice management write access.
+     */
+    public static function activeRoleCanManageFA(): bool
+    {
+        return self::activeRoleCan(self::CAN_MANAGE_FA);
     }
 }

@@ -193,8 +193,20 @@
             if (status === 'Passed') return 'text-brand-green'; // optional
             if (status === 'Failed') return 'text-brand-red';
             if (status === 'Pending') return 'text-brand-orange';
+            if (isNoAuditStatus(status)) return 'text-navy-600';
 
             return 'text-slate-600';
+        }
+
+        // A month with no audit scheduled yet can come back from the backend
+        // as null/empty or as an explicit 'No Audit' label - treat them all
+        // the same so the UI (and the "Add Audit" quick action) is consistent.
+        function isNoAuditStatus(status) {
+            return !status || status === 'No Audit' || status === 'N/A';
+        }
+
+        function complianceLabel(status) {
+            return isNoAuditStatus(status) ? 'Add Audit' : status;
         }
 
         const ACTIVITIES = @json($activities);
@@ -344,7 +356,11 @@
                                           <td class="py-2.5">${formatPHP(r.revenue)}</td>
                                           <td class="py-2.5">${formatPHP(r.expenses)}</td>
                                           <td class="py-2.5">${formatPHP(r.profit)}</td>
-                                          <td class="py-2.5 font-semibold ${complianceBadgeClass(r.compliance)}">${r.compliance}</td>
+                                          <td class="py-2.5 font-semibold ${complianceBadgeClass(r.compliance)}">
+                                            ${isNoAuditStatus(r.compliance)
+                                              ? `<button type="button" class="hover:underline js-quick-add-audit" data-year="${CURRENT_YEAR}" data-index="${i}">${complianceLabel(r.compliance)}</button>`
+                                              : complianceLabel(r.compliance)}
+                                          </td>
                                           <td class="py-2.5"><button type="button" class="text-navy-600 font-medium hover:underline js-report-view" data-year="${CURRENT_YEAR}" data-index="${i}">View</button></td>
                                         </tr>
                                       `).join('');
@@ -369,6 +385,12 @@
                                         <h3 class="text-lg font-bold text-navy mb-1">${r.month} ${r.year} Report</h3>
                                         <p class="text-sm text-slate-500 mb-4">Full financial and compliance breakdown for this period.</p>
                                         <div>${rowsHtml}</div>
+                                        ${isNoAuditStatus(r.compliance) ? `
+                                        <div class="mt-3 flex items-center justify-between gap-3 rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">
+                                          <p class="text-sm text-slate-500">No audit has been scheduled for this month yet.</p>
+                                          <button type="button" class="js-quick-add-audit shrink-0 rounded-lg px-3 py-2 text-xs font-semibold text-white bg-navy-600 hover:bg-navy-700" data-year="${year}" data-index="${index}">Add Audit</button>
+                                        </div>
+                                        ` : ''}
                                         <div class="flex justify-end pt-5">
                                           <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700">Close</button>
                                         </div>
@@ -396,7 +418,11 @@
                                                 <td class="py-2.5">${formatPHP(r.revenue)}</td>
                                                 <td class="py-2.5">${formatPHP(r.expenses)}</td>
                                                 <td class="py-2.5">${formatPHP(r.profit)}</td>
-                                                <td class="py-2.5 font-semibold ${complianceBadgeClass(r.compliance)}">${r.compliance}</td>
+                                                <td class="py-2.5 font-semibold ${complianceBadgeClass(r.compliance)}">
+                                                  ${isNoAuditStatus(r.compliance)
+                                                    ? `<button type="button" class="hover:underline js-quick-add-audit" data-year="${year}" data-index="${i}">${complianceLabel(r.compliance)}</button>`
+                                                    : complianceLabel(r.compliance)}
+                                                </td>
                                                 <td class="py-2.5"><button type="button" class="text-navy-600 font-medium hover:underline js-report-view" data-year="${year}" data-index="${i}">View</button></td>
                                               </tr>
                                             `).join('')}
@@ -436,6 +462,149 @@
             openReportDetailModal(btn.dataset.year, parseInt(btn.dataset.index, 10));
         });
 
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('.js-quick-add-audit');
+            if (!btn) return;
+            if (AppUI.requirePermission && !AppUI.requirePermission()) return;
+            openQuickAddAuditModal(btn.dataset.year, parseInt(btn.dataset.index, 10));
+        });
+
+        /**
+         * Lightweight "Add Audit" flow for a specific month that currently
+         * has no audit record, launched from a Monthly Report row/detail
+         * view. Reuses the same storeAudit endpoint as the header's full
+         * "Add Audit" modal, but only asks for what's needed here and
+         * pre-fills the month/year so the user doesn't have to.
+         */
+        function openQuickAddAuditModal(year, index) {
+            const r = REPORTS[year][index];
+            const auditTypeOptions = AUDIT_TYPES.map(t => `<option value="${t}">${t}</option>`).join('');
+
+            AppUI.openModal(`
+                                        <h3 class="text-lg font-bold text-navy mb-1">Add Audit — ${r.month} ${r.year}</h3>
+                                        <p class="text-sm text-slate-500 mb-4">Schedule an audit so this month's compliance status can be tracked.</p>
+                                        <form id="quick-audit-form" class="space-y-3">
+                                          <div>
+                                            <label class="block text-xs font-semibold text-slate-500 mb-1">Audit Type</label>
+                                            <select name="type" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-600/30">
+                                              ${auditTypeOptions}
+                                            </select>
+                                          </div>
+                                          <div>
+                                            <label class="block text-xs font-semibold text-slate-500 mb-1">Assigned To</label>
+                                            <input type="text" name="assigned_to" placeholder="Unassigned" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-600/30" />
+                                          </div>
+                                          <div>
+                                            <label class="block text-xs font-semibold text-slate-500 mb-1">Priority</label>
+                                            <select name="priority" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-600/30">
+                                              <option value="low">Low</option>
+                                              <option value="medium" selected>Medium</option>
+                                              <option value="high">High</option>
+                                              <option value="critical">Critical</option>
+                                            </select>
+                                          </div>
+                                          <div>
+                                            <label class="block text-xs font-semibold text-slate-500 mb-1">Notes</label>
+                                            <textarea name="notes" rows="3" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-600/30"></textarea>
+                                          </div>
+                                        </form>
+                                        <p id="quick-audit-error" class="text-sm text-brand-red hidden mt-2"></p>
+                                        <div class="flex justify-end gap-2 pt-5">
+                                          <button type="button" onclick="openReportDetailModal(${year}, ${index})" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50">Cancel</button>
+                                          <button type="button" id="quick-audit-save" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy-700">Schedule Audit</button>
+                                        </div>
+                                      `);
+
+            document.getElementById('quick-audit-save').addEventListener('click', function () {
+                const form = document.getElementById('quick-audit-form');
+                const errorEl = document.getElementById('quick-audit-error');
+                const fd = new FormData(form);
+                const btn = this;
+                const type = fd.get('type');
+
+                const payload = {
+                    name: `${type} Audit — ${r.month} ${r.year}`,
+                    type,
+                    priority: fd.get('priority'),
+                    year: parseInt(year, 10),
+                    month: r.monthNumber ?? (monthNames.indexOf(r.month) + 1),
+                    assigned_to: fd.get('assigned_to') || null,
+                    notes: fd.get('notes') || null,
+                };
+
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+
+                btn.disabled = true;
+                btn.textContent = 'Scheduling…';
+                errorEl.classList.add('hidden');
+
+                fetch(`{{ url('/financial-reports/audits') }}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken ?? '',
+                    },
+                    body: JSON.stringify(payload),
+                })
+                    .then(async (res) => {
+                        if (!res.ok) {
+                            const body = await res.json().catch(() => ({}));
+                            const message = body.errors
+                                ? Object.values(body.errors).flat().join(' ')
+                                : (body.message || 'Failed to schedule audit.');
+                            throw new Error(message);
+                        }
+                        return res.json();
+                    })
+                    .then(({ audit, activity }) => {
+                        AppUI.onAuditCreated(audit, activity);
+
+                        // Reflect the new audit against this month's report row
+                        // immediately, so "No Audit" turns into the real status
+                        // without needing a full page reload.
+                        r.compliance = audit.status;
+                        r.auditType = audit.auditType;
+                        renderPreviewReports();
+                        const allReportsWrap = document.getElementById('all-reports-table-wrap');
+                        const allReportsYearSelect = document.getElementById('all-reports-year-select');
+                        if (allReportsWrap && allReportsYearSelect && String(allReportsYearSelect.value) === String(year)) {
+                            allReportsWrap.innerHTML = renderAllReportsTable(year);
+                        }
+
+                        AppUI.showToast('Audit scheduled.', 'success');
+                        openReportDetailModal(year, index);
+                    })
+                    .catch((err) => {
+                        btn.disabled = false;
+                        btn.textContent = 'Schedule Audit';
+                        errorEl.textContent = err.message;
+                        errorEl.classList.remove('hidden');
+                    });
+            });
+        }
+
+        /**
+         * Prepend a new compliance activity (returned by the backend
+         * alongside every audit/tax-filing create/update/delete) so
+         * "Recent Compliance Activities" always reflects what just
+         * happened, instead of only whatever was loaded on page render.
+         */
+        function pushActivity(activity) {
+            ACTIVITIES.unshift(activity);
+            renderRecentActivities();
+
+            // Best-effort: if the "All Compliance Activities" modal happens
+            // to be open right now, refresh it too. Safe to skip if the
+            // modal markup can't be found.
+            try {
+                const openModalTitle = document.querySelector('h3');
+                if (openModalTitle && openModalTitle.textContent.trim() === 'All Compliance Activities') {
+                    openAllActivitiesModal();
+                }
+            } catch (e) { /* no-op */ }
+        }
+
         function renderRecentActivities() {
             const list = document.getElementById('recent-activities-list');
 
@@ -443,11 +612,7 @@
                             <div class="flex items-center justify-between gap-3">
                                 <span class="flex items-center gap-2">
                                     <i data-lucide="${a.icon}" class="w-4 h-4 ${a.iconColor}"></i>
-
-                                    <span class="flex items-center gap-1">
-                                        <i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i>
-                                        ${a.title}
-                                    </span>
+                                    <span>${a.title}</span>
                                 </span>
 
                                 <span class="text-xs font-medium ${a.color}">
@@ -467,8 +632,7 @@
                                     <i data-lucide="${a.icon}" class="w-4 h-4 mt-0.5 ${a.iconColor}"></i>
 
                                     <div>
-                                        <p class="text-sm font-medium text-slate-700 flex items-center gap-2">
-                                            <i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i>
+                                        <p class="text-sm font-medium text-slate-700">
                                             <span>${a.title}</span>
                                         </p>
 
@@ -684,11 +848,24 @@
                         }
                         return res.json();
                     })
-                    .then(({ audit: updated }) => {
+                    .then(({ audit: updated, activity }) => {
                         Object.assign(a, updated);
                         const cacheYear = String(a.year);
                         const cacheIdx = (AUDITS_CACHE[cacheYear] || []).findIndex(x => x.id === a.id);
                         if (cacheIdx !== -1) AUDITS_CACHE[cacheYear][cacheIdx] = a;
+
+                        // Keep the Monthly Reports compliance column in sync
+                        // with the audit's latest status.
+                        (REPORTS[cacheYear] || []).forEach(r => {
+                            if (r.month === a.month) {
+                                r.compliance = a.status;
+                                r.auditType = a.auditType;
+                            }
+                        });
+                        if (String(cacheYear) === String(CURRENT_YEAR)) renderPreviewReports();
+
+                        if (activity) pushActivity(activity);
+
                         AppUI.showToast('Audit updated.', 'success');
                         openAuditDetailModal(a.id);
                     })
@@ -721,11 +898,12 @@
                     }
                     return res.json();
                 })
-                .then(() => {
+                .then(({ activity }) => {
                     AUDITS.splice(idx, 1);
                     Object.keys(AUDITS_CACHE).forEach(year => {
                         AUDITS_CACHE[year] = (AUDITS_CACHE[year] || []).filter(a => a.id !== id);
                     });
+                    if (activity) pushActivity(activity);
                     AppUI.closeModal();
                     AppUI.showToast('Audit deleted.', 'success');
 
@@ -768,8 +946,10 @@
 
         Object.assign(AppUI, (function () {
 
-            function onAuditCreated(audit) {
+            function onAuditCreated(audit, activity) {
                 const year = String(audit.year);
+
+                if (activity) pushActivity(activity);
 
                 if (year === String(CURRENT_YEAR)) {
                     AUDITS = [audit, ...AUDITS];

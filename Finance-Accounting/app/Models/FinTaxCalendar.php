@@ -11,12 +11,16 @@ class FinTaxCalendar extends Model
     protected $fillable = [
         'label',
         'due_date',
+        'tax_year',
+        'tax_month',
         'amount',
         'status',
     ];
 
     protected $casts = [
-        'due_date' => 'date:Y-m-d',
-        'amount'   => 'decimal:2',
+        'due_date'  => 'date:Y-m-d',
+        'tax_year'  => 'integer',
+        'tax_month' => 'integer',
+        'amount'    => 'decimal:2',
     ];
 }
