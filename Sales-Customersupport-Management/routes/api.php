@@ -13,6 +13,29 @@ Route::prefix('v1')->group(function () {
     // Sales Invoices
     Route::get('/sales-invoices', [SalesInvoiceApiController::class, 'index']);
     Route::get('/sales-invoices/{salesInvoice}', [SalesInvoiceApiController::class, 'show']);
+   
+    Route::get('/ar/invoices', [SalesInvoiceApiController::class, 'unpaidInvoices']);
+    Route::get('/ar/aging-summary', [SalesInvoiceApiController::class, 'agingSummary']);
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::patch('/sales-invoices/{salesInvoice}/mark-paid', [SalesInvoiceApiController::class, 'markPaid']);
+        Route::patch('/sales-invoices/{salesInvoice}/mark-partial', [SalesInvoiceApiController::class, 'markPartial']);
+    });
+
+});
+
+
+
+/*
+Route::prefix('v1')->group(function () {
+
+    // Customers
+    Route::get('/customers', [CustomerApiController::class, 'index']);
+    Route::get('/customers/{customer}', [CustomerApiController::class, 'show']);
+
+    // Sales Invoices
+    Route::get('/sales-invoices', [SalesInvoiceApiController::class, 'index']);
+    Route::get('/sales-invoices/{salesInvoice}', [SalesInvoiceApiController::class, 'show']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/ar/invoices', [SalesInvoiceApiController::class, 'unpaidInvoices']);
@@ -22,3 +45,4 @@ Route::prefix('v1')->group(function () {
     });
 
 });
+*/
