@@ -6,22 +6,26 @@ use App\Http\Controllers\Controller;
 use App\Models\SalesInvoice;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Http\Resources\SalesInvoiceResource;
+
 
 class SalesInvoiceApiController extends Controller
 {
-    public function index()
+   public function index()
 {
-    return response()->json(
-        SalesInvoice::with('customer', 'items')->get()
-    );
+    $invoices = SalesInvoice::with('customer', 'items')->get();
+
+    return SalesInvoiceResource::collection($invoices);
 }
 
-    public function show(SalesInvoice $salesInvoice)
-    {
-        return response()->json(
-            $salesInvoice->load('customer', 'items')
-        );
-    }
+public function show(SalesInvoice $salesInvoice)
+{
+    $salesInvoice->load('customer', 'items');
+
+    return new SalesInvoiceResource($salesInvoice);
+}
+
+    
 
     /**
      * GET /api/v1/ar/invoices
