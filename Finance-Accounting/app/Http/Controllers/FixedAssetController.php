@@ -145,6 +145,7 @@ class FixedAssetController extends Controller
             'supplier' => 'nullable|string|max:150',
             'department' => 'nullable|string|max:100',
             'assigned_to' => 'nullable|string|max:150',
+            'cost_center' => 'nullable|string|max:100',
         ]);
 
         $asset = \DB::transaction(function () use ($validated) {
@@ -180,14 +181,14 @@ class FixedAssetController extends Controller
         });
 
         // ✅ Kapag may laman ang Department o Assigned To, gumawa agad ng Assignment record
-        if (!empty($validated['department']) || !empty($validated['assigned_to'])) {
+        if (!empty($validated['department']) || !empty($validated['assigned_to']) || !empty($validated['cost_center'])) {
             Assignment::create([
                 'asset_id' => $asset->asset_id,
                 'assigned_to' => $validated['assigned_to'] ?? 'Unassigned',
                 'department' => $validated['department'] ?? null,
                 'location' => $validated['location'] ?? null,
                 'date_assigned' => now()->format('Y-m-d'),
-                'cost_center' => null,
+                'cost_center' => $validated['cost_center'] ?? null,
                 'remarks' => 'Auto-created during asset registration.',
             ]);
         }
@@ -287,7 +288,7 @@ class FixedAssetController extends Controller
 
         // ✅ Totoong pinakahuling Assignment record ng asset na ito
         $assignment = Schema::hasTable('fa_assignments')
-            ? Assignment::where('asset_id', $asset->asset_id)->orderByDesc('date_assigned')->first()
+            ? Assignment::where('asset_id', $asset->asset_id)->latest('id')->first()
             : null;
 
         return view('fixed-assets.assignment', compact(

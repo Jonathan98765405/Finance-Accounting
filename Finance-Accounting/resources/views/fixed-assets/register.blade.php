@@ -154,13 +154,18 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Condition</label>
-                        <select class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
-                            <option>Select condition</option>
-                            <option>New</option>
-                            <option>Good</option>
-                            <option>Fair</option>
-                            <option>Poor</option>
+                        <select name="condition" class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                            <option value="">Select condition</option>
+                            <option value="New" {{ old('condition') === 'New' ? 'selected' : '' }}>New</option>
+                            <option value="Good" {{ old('condition', 'Good') === 'Good' ? 'selected' : '' }}>Good</option>
+                            <option value="Fair" {{ old('condition') === 'Fair' ? 'selected' : '' }}>Fair</option>
+                            <option value="Poor" {{ old('condition') === 'Poor' ? 'selected' : '' }}>Poor</option>
                         </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Cost Center</label>
+                        <input type="text" name="cost_center" value="{{ old('cost_center') }}" placeholder="Enter cost center"
+                               class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100">
                     </div>
                 </div>
             </div>
