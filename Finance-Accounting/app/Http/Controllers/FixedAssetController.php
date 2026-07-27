@@ -143,6 +143,7 @@ class FixedAssetController extends Controller
             'description' => 'nullable|string',
             'condition' => 'nullable|in:New,Good,Fair,Poor',
             'useful_life_years' => 'nullable|integer|min:1',
+            'salvage_value' => 'nullable|numeric|min:0',
             'supplier' => 'nullable|string|max:150',
             'department' => 'nullable|string|max:100',
             'assigned_to' => 'nullable|string|max:150',
@@ -166,7 +167,7 @@ class FixedAssetController extends Controller
                 'category_id' => $validated['category_id'],
                 'acquisition_date' => $validated['acquisition_date'],
                 'acquisition_cost' => $validated['acquisition_cost'],
-                'salvage_value' => 0,
+                'salvage_value' => $validated['salvage_value'] ?? 0,
                 'useful_life_years' => $validated['useful_life_years'] ?? 5,
                 'depreciation_method' => 'straight_line',
                 'accumulated_depreciation' => 0,
@@ -414,6 +415,7 @@ class FixedAssetController extends Controller
             'condition' => 'nullable|in:New,Good,Fair,Poor',
             'accumulated_depreciation' => 'nullable|numeric|min:0',
             'useful_life_years' => 'nullable|integer|min:1',
+            'salvage_value' => 'nullable|numeric|min:0',
         ]);
 
         $bookValue = $validated['acquisition_cost'] - ($validated['accumulated_depreciation'] ?? 0);
@@ -431,6 +433,7 @@ class FixedAssetController extends Controller
             'condition' => $validated['condition'] ?? 'Good',
             'accumulated_depreciation' => $validated['accumulated_depreciation'] ?? 0,
             'useful_life_years' => $validated['useful_life_years'] ?? $asset->useful_life_years,
+            'salvage_value' => $validated['salvage_value'] ?? $asset->salvage_value,
             'book_value' => $bookValue,
         ]);
 
