@@ -142,6 +142,12 @@ class FixedAssetController extends Controller
             'warranty_years' => 'nullable|integer|min:0',
             'description' => 'nullable|string',
             'condition' => 'nullable|in:New,Good,Fair,Poor',
+            'useful_life_years' => 'nullable|integer|min:1',
+            'salvage_value' => 'nullable|numeric|min:0',
+            'supplier' => 'nullable|string|max:150',
+            'department' => 'nullable|string|max:100',
+            'assigned_to' => 'nullable|string|max:150',
+            'cost_center' => 'nullable|string|max:100',
         ]);
 
         $asset = \DB::transaction(function () use ($validated) {
@@ -161,8 +167,8 @@ class FixedAssetController extends Controller
                 'category_id' => $validated['category_id'],
                 'acquisition_date' => $validated['acquisition_date'],
                 'acquisition_cost' => $validated['acquisition_cost'],
-                'salvage_value' => 0,
-                'useful_life_years' => 5,
+                'salvage_value' => $validated['salvage_value'] ?? 0,
+                'useful_life_years' => $validated['useful_life_years'] ?? 5,
                 'depreciation_method' => 'straight_line',
                 'accumulated_depreciation' => 0,
                 'book_value' => $validated['acquisition_cost'],
@@ -172,8 +178,22 @@ class FixedAssetController extends Controller
                 'warranty_years' => $validated['warranty_years'] ?? null,
                 'description' => $validated['description'] ?? null,
                 'condition' => $validated['condition'] ?? 'Good',
+                'supplier' => $validated['supplier'] ?? null,
             ]);
         });
+
+        // ✅ Kapag may laman ang Department o Assigned To, gumawa agad ng Assignment record
+        if (!empty($validated['department']) || !empty($validated['assigned_to']) || !empty($validated['cost_center'])) {
+            Assignment::create([
+                'asset_id' => $asset->asset_id,
+                'assigned_to' => $validated['assigned_to'] ?? 'Unassigned',
+                'department' => $validated['department'] ?? null,
+                'location' => $validated['location'] ?? null,
+                'date_assigned' => now()->format('Y-m-d'),
+                'cost_center' => $validated['cost_center'] ?? null,
+                'remarks' => 'Auto-created during asset registration.',
+            ]);
+        }
 
         $this->gl->postAssetAcquisition($asset);
 
@@ -270,7 +290,7 @@ class FixedAssetController extends Controller
 
         // ✅ Totoong pinakahuling Assignment record ng asset na ito
         $assignment = Schema::hasTable('fa_assignments')
-            ? Assignment::where('asset_id', $asset->asset_id)->orderByDesc('date_assigned')->first()
+            ? Assignment::where('asset_id', $asset->asset_id)->latest('id')->first()
             : null;
 
         return view('fixed-assets.assignment', compact(
@@ -394,6 +414,8 @@ class FixedAssetController extends Controller
             'description' => 'nullable|string',
             'condition' => 'nullable|in:New,Good,Fair,Poor',
             'accumulated_depreciation' => 'nullable|numeric|min:0',
+            'useful_life_years' => 'nullable|integer|min:1',
+            'salvage_value' => 'nullable|numeric|min:0',
         ]);
 
         $bookValue = $validated['acquisition_cost'] - ($validated['accumulated_depreciation'] ?? 0);
@@ -410,6 +432,8 @@ class FixedAssetController extends Controller
             'description' => $validated['description'] ?? null,
             'condition' => $validated['condition'] ?? 'Good',
             'accumulated_depreciation' => $validated['accumulated_depreciation'] ?? 0,
+            'useful_life_years' => $validated['useful_life_years'] ?? $asset->useful_life_years,
+            'salvage_value' => $validated['salvage_value'] ?? $asset->salvage_value,
             'book_value' => $bookValue,
         ]);
 

@@ -109,13 +109,22 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Supplier</label>
-                        <select class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
-                            <option>Select Supplier</option>
-                        </select>
+                        <input type="text" name="supplier" value="{{ old('supplier') }}" placeholder="Enter supplier name"
+                               class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Warranty</label>
                         <input type="text" placeholder="Enter warranty in year"
+                               class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Useful Life (years)</label>
+                        <input type="number" name="useful_life_years" value="{{ old('useful_life_years', 5) }}" min="1" placeholder="Enter useful life in years"
+                               class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Salvage Value</label>
+                        <input type="number" step="0.01" name="salvage_value" value="{{ old('salvage_value', 0) }}" min="0" placeholder="Enter estimated salvage value"
                                class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100">
                     </div>
                 </div>
@@ -130,9 +139,8 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Department</label>
-                        <select class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
-                            <option>Select department</option>
-                        </select>
+                        <input type="text" name="department" value="{{ old('department') }}" placeholder="Enter department"
+                               class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Location</label>
@@ -142,9 +150,8 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Assigned To</label>
-                        <select class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
-                            <option>Select employee</option>
-                        </select>
+                        <input type="text" name="assigned_to" value="{{ old('assigned_to') }}" placeholder="Enter employee name"
+                               class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
@@ -157,13 +164,18 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Condition</label>
-                        <select class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
-                            <option>Select condition</option>
-                            <option>New</option>
-                            <option>Good</option>
-                            <option>Fair</option>
-                            <option>Poor</option>
+                        <select name="condition" class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                            <option value="">Select condition</option>
+                            <option value="New" {{ old('condition') === 'New' ? 'selected' : '' }}>New</option>
+                            <option value="Good" {{ old('condition', 'Good') === 'Good' ? 'selected' : '' }}>Good</option>
+                            <option value="Fair" {{ old('condition') === 'Fair' ? 'selected' : '' }}>Fair</option>
+                            <option value="Poor" {{ old('condition') === 'Poor' ? 'selected' : '' }}>Poor</option>
                         </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Cost Center</label>
+                        <input type="text" name="cost_center" value="{{ old('cost_center') }}" placeholder="Enter cost center"
+                               class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100">
                     </div>
                 </div>
             </div>

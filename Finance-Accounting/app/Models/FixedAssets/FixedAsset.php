@@ -29,6 +29,7 @@ class FixedAsset extends Model
         'warranty_years',
         'description',
         'condition',
+        'supplier',
         'disposal_date',
         'disposal_value',
         'disposal_reason',
