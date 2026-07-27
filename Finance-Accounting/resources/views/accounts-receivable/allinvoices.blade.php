@@ -233,13 +233,13 @@ function openInvoiceDetailsModal(id) {
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 text-xs sm:text-sm space-y-1">
-                    <h4 class="font-bold text-navy mb-2 uppercase tracking-wide text-xs">Invoice Info</h4>
+                    <h4 class="font-bold text-navy mb-2 uppercase tracking-wide text-xs">Invoice Information</h4>
                     <p><span class="text-slate-400">Invoice No:</span> <strong class="text-slate-700">${invoice.invoice_number}</strong></p>
                     <p><span class="text-slate-400">Invoice Date:</span> <strong class="text-slate-700">${formatDateLong(invoice.invoice_date)}</strong></p>
                     <p><span class="text-slate-400">Due Date:</span> <strong class="text-slate-700">${formatDateLong(invoice.due_date)}</strong></p>
                 </div>
                 <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 text-xs sm:text-sm space-y-1">
-                    <h4 class="font-bold text-navy mb-2 uppercase tracking-wide text-xs">Customer Info</h4>
+                    <h4 class="font-bold text-navy mb-2 uppercase tracking-wide text-xs">Customer Information</h4>
                     <p><span class="text-slate-400">Name:</span> <strong class="text-slate-700">${invoice.customer?.customer_name ?? ''}</strong></p>
                     <p><span class="text-slate-400">Company:</span> <strong class="text-slate-700">${invoice.customer?.company ?? ''}</strong></p>
                     <p><span class="text-slate-400">Email:</span> <strong class="text-slate-700">${invoice.customer?.email ?? ''}</strong></p>

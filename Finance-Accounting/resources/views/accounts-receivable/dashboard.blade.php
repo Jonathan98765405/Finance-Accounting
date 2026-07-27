@@ -100,7 +100,7 @@ class="inline-flex items-center gap-2 bg-white text-navy border border-navy px-5
                             <th class="px-6 py-3.5">Due Date</th>
                             <th class="px-6 py-3.5 text-right">Amount</th>
                             <th class="px-6 py-3.5 text-center">Status</th>
-                            <th class="px-6 py-3.5 text-center no-print">Action</th>
+                            <th class="px-4 py-3.5 text-center no-print w-16 whitespace-nowrap">Action</th>
                         </tr>
                     </thead>
                     <tbody id="invoicesTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
@@ -371,8 +371,8 @@ function renderInvoicesTable() {
                     ${invoice.status}
                 </span>
             </td>
-            <td class="px-6 py-4 text-center no-print">
-                <button type="button" onclick="showMenu(event, ${invoice.id})" class="inline-flex h-8 w-8 items-center justify-center text-slate-400 hover:text-navy hover:bg-slate-100 rounded-lg transition">
+           <td class="px-4 py-4 text-center no-print">
+    <button type="button" onclick="showMenu(event, ${invoice.id})" class="inline-flex h-8 w-8 items-center justify-center text-slate-400 hover:text-navy hover:bg-slate-100 rounded-lg transition shrink-0">
                     <i data-lucide="more-vertical" class="w-4 h-4"></i>
                 </button>
             </td>
@@ -528,8 +528,8 @@ async function openReminderModal() {
     const invoiceOpts = renderInvoiceOpts(initialInvoices);
 
     AppUI.openModal(`
-        <h3 class="text-xl font-bold text-navy mb-1">Send Automated Reminder</h3>
-        <p class="text-sm text-slate-400 mb-5">Accounts Receivable > Notifications Center</p>
+        <h3 class="text-xl font-bold text-navy mb-1">Send Reminder</h3>
+        <p class="text-sm text-slate-400 mb-5">Accounts Receivable > Send Reminder</p>
 
         <form id="reminderSubmitForm" class="space-y-4">
 
@@ -596,7 +596,7 @@ Thank you.</textarea>
                     <button
                         type="submit"
                         class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-navy hover:bg-navy/95 shadow-sm">
-                        Dispatch Transmission
+                        Send Reminder
                     </button>
 
                 </div>
@@ -901,7 +901,7 @@ function openReportModal() {
                 </div>
             </div>
             <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Target Account Portfolio Target</label>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Target Account</label>
                 <select id="repCust" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-navy">${customerOpts}</select>
             </div>
             <p id="stmtError" class="text-brand-red text-xs font-semibold hidden">Portfolio target verification requires explicit configuration selection for statement parameters.</p>
@@ -1014,32 +1014,32 @@ function openInvoiceModal(id) {
     AppUI.openModal(`
         <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-5 bg-slate-50/50 p-4 rounded-xl">
             <div>
-                <h3 class="text-xl font-bold text-navy">Invoice Manifest Information</h3>
-                <p class="text-xs text-slate-400 mt-0.5">Reference Verification ID: <span class="font-bold text-navy">${invoice.invoice_number}</span></p>
+                <h3 class="text-xl font-bold text-navy">Invoice Details</h3>
+                <p class="text-xs text-slate-400 mt-0.5">Invoice ID: <span class="font-bold text-navy">${invoice.invoice_number}</span></p>
             </div>
             <span class="${statusBadgeClasses(invoice.status)} px-3 py-1 rounded-full text-xs font-extrabold tracking-wider uppercase">${invoice.status}</span>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
             <div class="bg-slate-50 border border-slate-100 p-4 rounded-xl text-xs space-y-1">
-                <h4 class="font-bold text-navy text-sm uppercase tracking-wider mb-2">Structure Metadata</h4>
-                <p><span class="text-slate-400 font-semibold">Timeline Origin:</span> <span class="text-slate-800 font-bold">${formatDateLong(invoice.invoice_date)}</span></p>
-                <p><span class="text-slate-400 font-semibold">Maturity Settlement:</span> <span class="text-slate-800 font-bold">${formatDateLong(invoice.due_date)}</span></p>
+                <h4 class="font-bold text-navy text-sm uppercase tracking-wider mb-2">Invoice Information</h4>
+                <p><span class="text-slate-400 font-semibold">Invoice Date:</span> <span class="text-slate-800 font-bold">${formatDateLong(invoice.invoice_date)}</span></p>
+                <p><span class="text-slate-400 font-semibold">Due Date:</span> <span class="text-slate-800 font-bold">${formatDateLong(invoice.due_date)}</span></p>
             </div>
             <div class="bg-slate-50 border border-slate-100 p-4 rounded-xl text-xs space-y-1">
-                <h4 class="font-bold text-navy text-sm uppercase tracking-wider mb-2">Client Parameters</h4>
-                <p><span class="text-slate-400 font-semibold">Entity Signature:</span> <span class="text-slate-800 font-bold">${customer ? customer.customer_name : 'Unknown'}</span></p>
-                <p><span class="text-slate-400 font-semibold">Corporate Suite:</span> <span class="text-slate-600 font-medium">${customer ? customer.company : 'N/A'}</span></p>
-                <p><span class="text-slate-400 font-semibold">Secure Mail:</span> <span class="text-slate-600">${customer ? customer.email : 'N/A'}</span></p>
+                <h4 class="font-bold text-navy text-sm uppercase tracking-wider mb-2">Customer Information</h4>
+                <p><span class="text-slate-400 font-semibold">Name:</span> <span class="text-slate-800 font-bold">${customer ? customer.customer_name : 'Unknown'}</span></p>
+                <p><span class="text-slate-400 font-semibold">Company:</span> <span class="text-slate-600 font-medium">${customer ? customer.company : 'N/A'}</span></p>
+                <p><span class="text-slate-400 font-semibold">Email:</span> <span class="text-slate-600">${customer ? customer.email : 'N/A'}</span></p>
             </div>
         </div>
         <div class="border border-slate-200 rounded-xl overflow-hidden mb-5">
             <table class="w-full text-left">
                 <thead class="bg-slate-50 text-slate-500 text-xs font-bold uppercase tracking-wider border-b border-slate-100">
                     <tr>
-                        <th class="px-5 py-3">Specification Line</th>
-                        <th class="px-5 py-3 text-center">Volume</th>
-                        <th class="px-5 py-3 text-right">Unit Scalar</th>
-                        <th class="px-5 py-3 text-right">Subtotal Gross</th>
+                        <th class="px-5 py-3">DESCRIPTION</th>
+                        <th class="px-5 py-3 text-center">QTY</th>
+                        <th class="px-5 py-3 text-right">UNIT PRICE</th>
+                        <th class="px-5 py-3 text-right">AMOUNT</th>
                     </tr>
                 </thead>
                 <tbody>${itemsHtml}</tbody>
@@ -1047,10 +1047,10 @@ function openInvoiceModal(id) {
         </div>
         <div class="flex justify-end">
             <div class="w-full sm:w-72 bg-slate-50 border border-slate-100 p-4 rounded-xl space-y-2 text-xs font-semibold text-slate-600">
-                <div class="flex justify-between"><span>Base Aggregate:</span><span class="text-slate-900">${formatCurrency(invoice.subtotal)}</span></div>
-                <div class="flex justify-between"><span>Fiscal Levy (12%):</span><span class="text-slate-900">${formatCurrency(invoice.tax)}</span></div>
-                <div class="flex justify-between border-t border-slate-200 pt-2 text-sm font-bold text-slate-900"><span>Gross Value Total:</span><span>${formatCurrency(invoice.total)}</span></div>
-                <div class="flex justify-between text-brand-red font-bold"><span>Outstanding Residual:</span><span>${formatCurrency(invoice.balance)}</span></div>
+                <div class="flex justify-between"><span>Subtotal:</span><span class="text-slate-900">${formatCurrency(invoice.subtotal)}</span></div>
+                <div class="flex justify-between"><span>Tax (12%):</span><span class="text-slate-900">${formatCurrency(invoice.tax)}</span></div>
+                <div class="flex justify-between border-t border-slate-200 pt-2 text-sm font-bold text-slate-900"><span>Total:</span><span>${formatCurrency(invoice.total)}</span></div>
+                <div class="flex justify-between text-brand-red font-bold"><span>Balance:</span><span>${formatCurrency(invoice.balance)}</span></div>
             </div>
         </div>
     `, 'lg');
@@ -1206,23 +1206,23 @@ function openAllPaymentsModal() {
     }).join('');
 
     AppUI.openModal(`
-        <h3 class="text-xl font-bold text-navy mb-1">Complete Settlement Log</h3>
-        <p class="text-sm text-slate-400 mb-4">Accounts Receivable > Archive Processing Ledger</p>
+        <h3 class="text-xl font-bold text-navy mb-1">Recent Payments</h3>
+        <p class="text-sm text-slate-400 mb-4">Accounts Receivable > Recent Payments</p>
         <div class="border border-slate-200 rounded-xl overflow-hidden max-h-[400px] overflow-y-auto">
             <table class="w-full text-left">
                 <thead class="bg-slate-50 text-slate-500 text-xs font-bold uppercase border-b border-slate-100 sticky top-0 z-10">
                     <tr>
                         <th class="px-4 py-3">Client Entity</th>
                         <th class="px-4 py-3 whitespace-nowrap">Reference No.</th>
-                        <th class="px-4 py-3 text-right">Settled Volume</th>
-                        <th class="px-4 py-3 text-center">Posting Timeline</th>
+                        <th class="px-4 py-3 text-right">Payment Amount</th>
+                        <th class="px-4 py-3 text-center">Payment Date</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">${listHtml}</tbody>
             </table>
         </div>
         <div class="flex justify-end mt-4">
-            <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50">Close Registry View</button>
+            <button type="button" onclick="AppUI.closeModal()" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50">Close Window</button>
         </div>
     `, 'xl');
 }
